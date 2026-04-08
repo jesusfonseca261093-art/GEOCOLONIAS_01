@@ -82,9 +82,13 @@ const AdminView = {
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
+                    <button onclick="AdminController.exportAllToPDF()"
+                            style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
+                        📄 Exportar PDFs
+                    </button>
                         <button onclick="AdminController.exportToCSV()"
                                 style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
-                            Exportar
+                        Exportar CSV
                         </button>
                     </div>
                 </div>
@@ -93,6 +97,13 @@ const AdminView = {
                     <!-- Filtros -->
                     <div class="card">
                         <div class="grid-responsive">
+                            <div class="form-group">
+                                <label>Filtrar por mes</label>
+                                <input type="month" 
+                                       id="filterMonth"
+                                       value="${appState.filterMonth || ''}"
+                                       onchange="AdminController.updateFilterMonth(this.value)">
+                            </div>
                             <div class="form-group">
                                 <label>Filtrar por fecha</label>
                                 <input type="date" 
@@ -179,6 +190,10 @@ const AdminView = {
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
+                        <button onclick="AdminController.exportAllToPDF()"
+                                style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
+                            📄 Exportar PDF
+                        </button>
                         <button onclick="AdminController.exportToCSV()"
                                 style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                             Exportar
@@ -245,78 +260,128 @@ const AdminView = {
         const inspectionPoints = CONFIG.getInspectionPointsByRouteType(tipoRuta);
         
         const getStatusRow = (point) => {
+            if (point.isHeader) {
+                return `
+                    <tr>
+                        <td colspan="4" style="border: 1px solid #000; padding: 4px; font-size: 9px; font-weight: bold; background-color: #e5e7eb; text-transform: uppercase;">
+                            ${point.label}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Separar Componente y Criterio basado en los paréntesis "Componente (Criterio)"
+            let component = point.label;
+            let criterion = "";
+            const match = point.label.match(/^(.*?)\s*\((.*?)\)$/);
+            if (match) {
+                component = match[1];
+                criterion = match[2];
+            }
+
             const evaluacion = report.evaluaciones && report.evaluaciones[point.id];
             if (!evaluacion) return '';
+            
+            const isApproved = evaluacion === 'aprobado';
             const isRejected = evaluacion === 'rechazado';
             const hasPhoto = report.fotos && report.fotos[point.id];
             
             return `
                 <tr>
-                    <td style="border: 1px solid #444; padding: 4px; font-size: 9px;">${point.label}</td>
-                    <td style="border: 1px solid #444; padding: 4px; text-align: center; font-weight: bold; font-size: 9px; color: ${isRejected ? '#dc2626' : '#166534'}; width: 30px;">
-                        ${isRejected ? '✗' : '✓'}
+                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px;">${component}</td>
+                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px;">${criterion}</td>
+                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; font-weight: bold;">
+                        ${isApproved ? 'X' : ''}
                     </td>
-                    <td style="border: 1px solid #444; padding: 4px; text-align: center; width: 60px;">
-                        ${hasPhoto ? `<img src="${report.fotos[point.id]}" style="max-height: 30px; max-width: 50px; object-fit: cover;">` : ''}
+                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; font-weight: bold; color: ${isRejected ? '#dc2626' : '#000'};">
+                        ${isRejected ? 'X' : ''}
                     </td>
                 </tr>
             `;
         };
 
+        const fechaText = report.fecha || '______________';
+        const operadorText = report.operador || '____________________';
+        const unidadText = report.ecoUnidad || '__________';
+        const observaciones = report.observaciones || 'Ninguna';
+
+        // Extraer fotos y crear una galería visible solo en la pantalla (NO EN EL PDF)
+        const pointsWithPhotos = inspectionPoints.filter(p => !p.isHeader && report.fotos && report.fotos[p.id]);
+        let photosHtml = '';
+        if (pointsWithPhotos.length > 0) {
+            photosHtml = `
+                <div style="margin-top: 24px; background: #f8fafc; padding: 20px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                    <h3 style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        📸 Evidencia Fotográfica de Fallas
+                        <span style="font-size: 10px; font-weight: normal; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">(Visible solo en panel, no se imprime en PDF)</span>
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                        ${pointsWithPhotos.map(p => {
+                            let comp = p.label;
+                            const m = p.label.match(/^(.*?)\s*\((.*?)\)$/);
+                            if (m) comp = m[1] + ' - ' + m[2];
+                            return `
+                                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: white; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <p style="font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #334155;">${comp}</p>
+                                    <img src="${report.fotos[p.id]}" style="max-width: 100%; height: 160px; object-fit: contain; border-radius: 4px;">
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         return `
-            <div style="padding: 20px; max-width: 800px; margin: 0 auto; padding-bottom: 100px;">
-                <div id="${contentId}" class="formato-container" style="background: white; padding: 15px; border: 1px solid #000; font-family: Arial, sans-serif;">
+            <div style="padding: 20px; max-width: 900px; margin: 0 auto; padding-bottom: 100px;">
+                <div id="${contentId}" style="background: white; padding: 24px; border: 1px solid #d1d5db; font-family: sans-serif; color: #000;">
                     
-                    <!-- ENCABEZADO - Tabla sin bordes -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-                        <tr>
-                            <td style="width: 33%; border: none; vertical-align: top;">
-                                <img src="${CONFIG.LOGO_URL}" alt="Gas Express Nieto" style="max-width: 150px; max-height: 60px; object-fit: contain;">
-                            </td>
-                            <td style="width: 34%; border: none; text-align: center; font-size: 12px; font-weight: bold; text-transform: uppercase; vertical-align: top;">
-                                INSPECCIÓN DE UNIDAD<br>PLANTA: QUERÉTARO
-                            </td>
-                            <td style="width: 33%; border: none; text-align: right; font-size: 10px; vertical-align: top;">
-                                FECHA: ${report.fecha}<br>
-                                HORA: ${report.hora}
-                            </td>
-                        </tr>
-                    </table>
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #000; padding-bottom: 16px;">
+                        <div style="font-size: 20px; font-weight: bold; font-style: italic; line-height: 1.2;">
+                            <img src="${CONFIG.LOGO_URL}" alt="GEN" style="max-width: 200px; height: auto; object-fit: contain;">
+                        </div>
+                        <div style="text-align: center;">
+                            <p style="font-weight: bold; font-size: 18px; margin: 0;">(Normativo)</p>
+                            <p style="font-weight: bold; font-size: 20px; text-transform: uppercase; margin: 0;">Listado de revisión visual diaria</p>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; margin-bottom: 16px; font-style: italic; line-height: 1.4;">
+                        Antes de la puesta en marcha de la Unidad de Distribución se debe realizar la siguiente revisión visual diaria, según la Unidad que corresponda. Los conceptos de este Apéndice pueden conformar un documento independiente, formar parte de los procedimientos de operación o de la bitácora de operación.
+                    </div>
+
+                    <!-- Unidad info -->
+                    <div style="margin-bottom: 16px; font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 8px; background-color: #f9fafb; text-transform: uppercase;">
+                        ${tipoRuta === 'Autotanque' ? 'AUTOTANQUE' : 'VEHÍCULO DE REPARTO'}
+                    </div>
                     
-                    <!-- DATOS GENERALES - Tabla con bordes -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-                        <tr>
-                            <td style="border: 1px solid #444; padding: 4px; width: 50%;">
-                                <span style="font-weight: bold; font-size: 8px; text-transform: uppercase; display: block; margin-bottom: 2px; color: #333;">OPERADOR:</span>
-                                ${report.operador}
-                            </td>
-                            <td style="border: 1px solid #444; padding: 4px; width: 50%;">
-                                <span style="font-weight: bold; font-size: 8px; text-transform: uppercase; display: block; margin-bottom: 2px; color: #333;">UNIDAD:</span>
-                                ${report.ecoUnidad}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #444; padding: 4px;">
-                                <span style="font-weight: bold; font-size: 8px; text-transform: uppercase; display: block; margin-bottom: 2px; color: #333;">KILOMETRAJE:</span>
-                                ${report.km ? report.km.toLocaleString() : ''}
-                            </td>
-                            <td style="border: 1px solid #444; padding: 4px;">
-                                <span style="font-weight: bold; font-size: 8px; text-transform: uppercase; display: block; margin-bottom: 2px; color: #333;">RUTA:</span>
-                                ${report.ruta} 
-                                <span style="background: #dbeafe; padding: 2px 4px; border-radius: 4px; font-size: 8px; margin-left: 5px;">
-                                    ${report.tipoRuta || 'Estándar'}
-                                </span>
-                            </td>
-                        </tr>
-                    </table>
+                    <!-- Datos Generales -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; font-size: 12px;">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div><span style="font-weight: bold;">FECHA:</span> <span style="border-bottom: 1px solid #000; padding: 0 10px;">${fechaText}</span></div>
+                            <div><span style="font-weight: bold;">NOMBRE DEL OPERADOR:</span> <span style="border-bottom: 1px solid #000; padding: 0 10px;">${operadorText}</span></div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div><span style="font-weight: bold;">IDENTIFICACIÓN DE LA UNIDAD:</span> <span style="border-bottom: 1px solid #000; padding: 0 10px;">${unidadText}</span></div>
+                            <div style="display: flex; align-items: end;">
+                                <span style="font-weight: bold; margin-right: 10px;">FIRMA(S):</span> 
+                                ${report.firma ? `<img src="${report.firma}" style="max-height: 40px; border-bottom: 1px solid #000;">` : '<span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>'}
+                            </div>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <span style="font-weight: bold;">NOMBRE(S) DEL PERSONAL AUXILIAR:</span> <span style="border-bottom: 1px solid #000; display: inline-block; width: 300px;"></span>
+                        </div>
+                    </div>
                     
-                    <!-- CHECKLIST - Tabla con encabezados -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                    <!-- Tabla de Revisión -->
+                    <table style="border-collapse: collapse; width: 100%; margin-bottom: 24px;">
                         <thead>
-                            <tr style="background-color: #cbdcf7;">
-                                <th style="border: 1px solid #444; padding: 4px; font-size: 9px; text-align: left;">PUNTO DE REVISIÓN</th>
-                                <th style="border: 1px solid #444; padding: 4px; font-size: 9px; width: 40px;">EST.</th>
-                                <th style="border: 1px solid #444; padding: 4px; font-size: 9px; width: 80px;">EVIDENCIA</th>
+                            <tr style="background-color: #f3f4f6;">
+                                <th style="border: 1px solid #000; padding: 4px; font-size: 9px; width: 40%; text-align: left;">Componentes</th>
+                                <th style="border: 1px solid #000; padding: 4px; font-size: 9px; width: 40%; text-align: left;">Criterio de aceptación</th>
+                                <th style="border: 1px solid #000; padding: 4px; font-size: 9px; width: 10%; text-align: center;">Cumple</th>
+                                <th style="border: 1px solid #000; padding: 4px; font-size: 9px; width: 10%; text-align: center;">No cumple</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -324,45 +389,36 @@ const AdminView = {
                         </tbody>
                     </table>
                     
-                    <!-- OBSERVACIONES -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-                        <tr>
-                            <td style="border: 1px solid #444; padding: 4px; background-color: #cbdcf7;">
-                                <span style="font-weight: bold; font-size: 8px; text-transform: uppercase; color: #333;">OBSERVACIONES:</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #444; padding: 8px; font-size: 9px; min-height: 40px;">
-                                ${report.observaciones || 'Sin observaciones'}
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <!-- FIRMAS -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
-                        <tr>
-                            <td style="border: 1px solid #444; padding: 4px; width: 50%; height: 60px; text-align: center; vertical-align: middle;">
-                                ${report.firma ? `<img src="${report.firma}" style="max-height: 50px; max-width: 100%; object-fit: contain;">` : ''}
-                            </td>
-                            <td style="border: 1px solid #444; padding: 4px; width: 50%; height: 60px; text-align: center; vertical-align: middle;">
-                                <!-- Espacio para firma supervisor -->
-                            </td>
-                        </tr>
-                        <tr style="background-color: #cbdcf7;">
-                            <td style="border: 1px solid #444; padding: 4px; text-align: center; font-weight: bold; font-size: 8px;">
-                                FIRMA OPERADOR
-                            </td>
-                            <td style="border: 1px solid #444; padding: 4px; text-align: center; font-weight: bold; font-size: 8px;">
-                                FIRMA SUPERVISOR
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <!-- Información del tipo de ruta -->
-                    <div style="margin-top: 10px; font-size: 8px; text-align: right; color: #64748b;">
-                        Tipo de inspección: <strong>${report.tipoRuta || 'Estándar'}</strong>
+                    <!-- Sección de Incumplimientos -->
+                    <div style="border-top: 2px solid #000; padding-top: 16px;">
+                        <h3 style="font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 12px;">ESTA SECCIÓN SE UTILIZA EN CASO DE DETECTAR INCUMPLIMIENTOS EN LA REVISIÓN</h3>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div style="border-bottom: 1px solid #000; padding-bottom: 4px; min-height: 20px;">
+                                <span style="font-weight: bold;">Defectos o anomalías observadas:</span> ${observaciones}
+                            </div>
+                            <div style="border-bottom: 1px solid #000; padding-bottom: 4px; min-height: 20px;">
+                                <!-- Línea extra para escritura a mano -->
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+                                <div style="border-bottom: 1px solid #000; padding-bottom: 4px;">
+                                    <span style="font-weight: bold;">Nombre del responsable de la corrección/reparación:</span> 
+                                </div>
+                                <div style="border-bottom: 1px solid #000; padding-bottom: 4px;">
+                                    <span style="font-weight: bold;">Fecha de la acción correctiva:</span> 
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px; display: flex; align-items: end;">
+                                <span style="font-weight: bold; margin-right: 10px;">Firma del responsable:</span> 
+                                <span style="border-bottom: 1px solid #000; display: inline-block; width: 200px;"></span>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
+                
+                <!-- Galería de fotos que solo se ve en pantalla -->
+                ${photosHtml}
                 
                 <!-- BOTONES DE ACCIÓN -->
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -370,7 +426,7 @@ const AdminView = {
                             class="btn btn-secondary" style="flex: 1;">
                         Cerrar
                     </button>
-                    <button onclick="AdminController.downloadPDF('${contentId}', 'Reporte_${report.ecoUnidad}')"
+                    <button onclick="AdminController.downloadPDF('${contentId}', 'Listado_Revision_${report.ecoUnidad}')"
                             class="btn btn-danger" style="flex: 1;">
                         📄 Descargar PDF
                     </button>

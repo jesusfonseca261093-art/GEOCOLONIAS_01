@@ -130,14 +130,25 @@ const FormView = {
                                     Marca con ✅ (Aprobado) o ❌ (Rechazado) cada punto de revisión
                                 </p>
                                 
-                                ${inspectionPoints.map((point, index) => `
-                                    <div style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <div>
-                                                <span style="font-weight: bold;">${point.label}</span>
-                                                ${point.critical ? '<span style="font-size: 10px; color: #dc2626; margin-left: 8px;">(CRÍTICO)</span>' : ''}
+                                ${inspectionPoints.map((point, index) => {
+                                    // Dibujar encabezado si es una categoría
+                                    if (point.isHeader) {
+                                        return `
+                                            <div style="margin: 24px 0 12px 0; padding: 8px 12px; background: #e2e8f0; color: #1e293b; border-left: 4px solid #1e40af; border-radius: 4px; font-weight: bold; font-size: 13px; text-transform: uppercase;">
+                                                📋 ${point.label}
                                             </div>
-                                            <div style="display: flex; gap: 8px;">
+                                        `;
+                                    }
+                                    
+                                    // Dibujar la pregunta normal si no es encabezado
+                                    return `
+                                    <div style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                            <div style="flex: 1; min-width: 0;">
+                                                <span style="font-weight: bold; line-height: 1.3; display: block; word-wrap: break-word;">${point.label}</span>
+                                                ${point.critical ? '<span style="font-size: 10px; color: #dc2626; font-weight: bold; display: inline-block; margin-top: 4px;">(CRÍTICO)</span>' : ''}
+                                            </div>
+                                            <div style="display: flex; gap: 8px; flex-shrink: 0;">
                                                 <button type="button"
                                                         onclick="FormController.setEvaluation('${point.id}', 'aprobado', App.appState)"
                                                         style="padding: 6px 12px; border: none; border-radius: 6px; 
@@ -182,7 +193,8 @@ const FormView = {
                                             </div>
                                         ` : ''}
                                     </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                                 
                                 <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px;">
                                     <p style="font-size: 11px; color: #92400e;">
