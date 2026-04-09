@@ -36,12 +36,7 @@ const HomeView = {
 
                         <button onclick="App.goToStep('supervision')" class="btn" style="background: #0867ec; color: white;">
                             👨‍🔧 SUPERVISIÓN EN CAMPO
-                        </button>
-
-                        <button onclick="App.goToStep('supervision')" class="btn" style="background: #334155; color: white;">
-                            📖 ACTA DE HECHOS
-                        </button>
-
+                        </button>       
 
                     </div>
                     
