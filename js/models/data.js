@@ -493,39 +493,114 @@ const RUTAS_POR_TIPO = {
 
 // PUNTOS DE INSPECCIÓN PARA TIPOS NORMALES (Utilitario, Mantenimiento, Montacargas, Cilindros)
 const INSPECTION_POINTS_NORMAL = [
-    { id: 'ext_clean', label: 'Limpieza Exterior', critical: true },
-    { id: "Motor Oil", label: "Aceite de Motor", critical: true}, 
-    { id: "transmission oil", label: "Aceite de Transmision", critical: true},
-    { id: "coolant liquid", label: "Anticongelante", critical: true},
-    { id: "Clutch liqud", label: "Liquido de Clutch", critical: true},
-    { id: "brake fluid", label: "Liquido de Frenos", critical: true},
-    { id: "Lights", label: "Luces", critical: true},
-    { id: "reverse horn", label: "Bocina de Reversa", critical: true},
-    { id: "tires", label: "Llantas Pocision 1,2,3,4,5,6", critical: true},
-   
+    { id: "head_interior", label: "INTERIOR DE LA UNIDAD", isHeader: true },
+    { id: "int_indicadores", label: "Indicadores del tablero (Funcionan)", critical: true },
+    { id: "int_calentador", label: "Calentador-Desempañador (Funciona)", critical: true },
+    { id: "int_herramientas", label: "Caja de herramientas y martillo (A bordo)", critical: true },
+    { id: "int_lampara", label: "Lámpara de mano (A bordo)", critical: true },
+    { id: "int_cinturon", label: "Cinturón de seguridad (Buen estado y funciona)", critical: true },
+    { id: "int_parabrisas", label: "Parabrisas (Sin daño)", critical: true },
+    { id: "int_limpiadores", label: "Limpiadores (Funcionando)", critical: true },
+    { id: "int_espejos", label: "Espejos retrovisores (Sin daño)", critical: true },
+    { id: "int_frenos", label: "Sistema de frenos (Funciona)", critical: true },
+
+    { id: "head_frente", label: "FRENTE EXTERIOR", isHeader: true },
+    { id: "frente_defensa", label: "Defensa (Sujeción correcta, en buen estado)", critical: true },
+    { id: "frente_luces", label: "Sistema de luces (Funcionando)", critical: true },
+
+    { id: "head_laterales", label: "LADO IZQUIERDO Y DERECHO", isHeader: true },
+    { id: "lat_tapon", label: "Tapón tanque de combustible (Cierre hermético)", critical: true },
+    { id: "lat_luces", label: "Sistema de luces (Funcionando)", critical: true },
+    { id: "lat_refaccion", label: "Llanta de refacción (Presión correcta y sin daños)", critical: true },
+    { id: "lat_llantas", label: "Llantas (Presión de fabricante y sin daños)", critical: true },
+    { id: "lat_rines", label: "Rines (Sin daños)", critical: true },
+    { id: "lat_birlos", label: "Birlos y tuercas (Completos y sin daños)", critical: true },
+    { id: "lat_loderas", label: "Guardafangos / Loderas (Completos y sin daños)", critical: true },
+
+    { id: "head_posterior", label: "PARTE POSTERIOR E INFERIOR", isHeader: true },
+    { id: "post_luces", label: "Sistema de luces (Funcionando)", critical: true },
+    { id: "post_reflejantes", label: "Reflejantes visibles (En buen estado)", critical: true },
+    { id: "post_defensa", label: "Defensa (Sujeción correcta, sin daños)", critical: true },
+    { id: "post_escape", label: "Escape (Sujeto y sin daño)", critical: true },
+    { id: "inf_muelles", label: "Muelles (Completos)", critical: true },
+
+    { id: "head_emergencia", label: "EQUIPO DE EMERGENCIA Y ESTRUCTURA", isHeader: true },
+    { id: "em_botiquin", label: "Botiquín de primeros auxilios (A bordo)", critical: true },
+    { id: "em_extintor", label: "Extintor 9kg tipo ABC (Sujeto, fecha vigente)", critical: true },
+    { id: "em_senales", label: "Señales reflejantes y Calzas (A bordo, sin daño)", critical: true },
+    { id: "est_plataforma", label: "Plataforma y armazón perimetral (Uniforme y completa)", critical: true },
+    { id: "est_sujecion", label: "Sistema de aseguramiento y enganche (Sin daño)", critical: true },
+    { id: "est_recipientes", label: "Recipientes (En posición vertical y asegurados)", critical: true },
+    
+    { id: "head_letreros", label: "LETREROS, SEÑALES Y AVISOS", isHeader: true },
+    { id: "letreros", label: "Letreros y avisos (Claros, legibles y no obstruidos)", critical: true }
 ];
 
 // PUNTOS DE INSPECCIÓN PARA AUTOTANQUE (DIFERENTE)
 const INSPECTION_POINTS_AUTOTANQUE = [
-    { id: 'ext_clean', label: 'Limpieza Exterior/Interior', critical: true },
-    { id: "Motor Oil", label: "Aceite de Motor", critical: true}, 
-    { id: "transmission oil", label: "Aceite de Transmision", critical: true},
-    { id: "coolant liquid", label: "Anticongelante", critical: true},
-    { id: "brake fluid", label: "Liquido de Frenos", critical: true},
-    { id: "Lights", label: "Luces", critical: true},
-    { id: "reverse horn", label: "Bocina de Reversa", critical: true},
-    { id: "tires", label: "Llantas", critical: true},
-    { id: "valves", label: "Válvulas de Seguridad", critical: true},
-    { id: "hoses", label: "Mangueras", critical: true},
-    { id: "static_strap", label: "Cinta Estática", critical: true},
-    { id: "emergency_valve", label: "Válvula de Emergencia", critical: true},
-    { id: "pressure_gauge", label: "Manómetro", critical: true},
-    { id: "leak_test", label: "Prueba de Fugas", critical: true},
-    { id: "safety_caps", label: "Tapones de Seguridad", critical: false},
-    { id: "fire_extinguisher", label: "Extintor", critical: true},
-    { id: "hose_reel", label: "Carrete de Manguera", critical: false},
-    { id: "tires", label: "Llantas Pocision 1,2,3,4,5,6", critical: true},
-  
+    // RECIPIENTE, VÁLVULAS, ACCESORIOS Y SISTEMA DE TRASIEGO
+    { id: "head_recipiente", label: "RECIPIENTE, VÁLVULAS, ACCESORIOS Y SISTEMA DE TRASIEGO", isHeader: true },
+    { id: "at_recipiente", label: "Recipiente No Desmontable (Libre de abolladuras, protuberancias, etc.)", critical: true },
+    { id: "at_coples", label: "Coples (Sin fuga)", critical: true },
+    { id: "at_valvulas_acc", label: "Válvulas y accesorios (Sin fuga)", critical: true },
+    { id: "at_valvula_interna", label: "Válvula interna (Abre/cierra correctamente)", critical: true },
+    { id: "at_indicadores_fuga", label: "Indicador de presión, temp. y nivel (Sin fuga y funciona)", critical: true },
+    { id: "at_indicadores_nivel", label: "Nivel de llenado del Recipiente (No excede el 90%)", critical: true },
+    { id: "at_bomba", label: "Bomba de trasiego (Tornillería completa y anclaje correcto)", critical: true },
+    { id: "at_medicion", label: "Sistema de medición (Sin fuga, tornillería completa, sin corrosión)", critical: true },
+    { id: "at_manguera_estado", label: "Manguera (Sin protuberancias, cortes, raspaduras)", critical: true },
+    { id: "at_manguera_recubrimiento", label: "Manguera (Recubrimiento de hule y malla interna sin daño)", critical: true },
+    { id: "at_manguera_accesorios", label: "Manguera (Tornillería completa, sin desgaste en accesorios)", critical: true },
+    { id: "at_junta_rotatoria", label: "Junta rotatoria (Sin fuga, sin cables expuestos y funcionando)", critical: true },
+    { id: "at_valvula_suministro", label: "Válvula de suministro (Sin daños y sin fugas)", critical: true },
+
+    // INTERIOR (CABINA)
+    { id: "head_interior_at", label: "INTERIOR (CABINA)", isHeader: true },
+    { id: "at_documentos", label: "Documentos (Permiso, T. Circulación, Reglamento, PRE, HDS a bordo)", critical: true },
+    { id: "at_herramientas", label: "Caja de herramientas y martillo (A bordo)", critical: true },
+    { id: "at_lampara", label: "Lámpara de mano (A bordo)", critical: true },
+    { id: "at_indicadores", label: "Indicadores del tablero (Funcionan)", critical: true },
+    { id: "at_calentador", label: "Calentador-Desempañador (Funciona)", critical: true },
+    { id: "at_cinturon", label: "Cinturón de seguridad (En buen estado y funciona)", critical: true },
+    { id: "at_parabrisas", label: "Parabrisas (Sin daño)", critical: true },
+    { id: "at_limpiadores", label: "Limpiadores (Funcionan)", critical: true },
+    { id: "at_espejos", label: "Espejos retrovisores (Sin daño)", critical: true },
+    { id: "at_frenos", label: "Sistema de frenos (Funciona)", critical: true },
+
+    // FRENTE EXTERIOR
+    { id: "head_frente_at", label: "FRENTE EXTERIOR", isHeader: true },
+    { id: "at_frente_defensa", label: "Defensa (Sujeción correcta, sin daños)", critical: true },
+    { id: "at_frente_luces", label: "Sistema de luces (Funcionan)", critical: true },
+    { id: "at_frente_escape", label: "Escape (Sujeto y sin daño)", critical: true },
+
+    // LADO IZQUIERDO Y LADO DERECHO
+    { id: "head_laterales_at", label: "LADO IZQUIERDO Y LADO DERECHO", isHeader: true },
+    { id: "at_lat_tapon", label: "Tapón del tanque de combustible (Cierre hermético)", critical: true },
+    { id: "at_lat_luces", label: "Sistema de luces (Funcionan)", critical: true },
+    { id: "at_lat_refaccion", label: "Llanta de refacción (Presión correcta y sin daños)", critical: true },
+    { id: "at_lat_llantas", label: "Llantas (Presión correcta y sin daños)", critical: true },
+    { id: "at_lat_rines", label: "Rines (Sin daños)", critical: true },
+    { id: "at_lat_birlos", label: "Birlos y tuercas (Completos y sin daños)", critical: true },
+    { id: "at_lat_loderas", label: "Guardafangos / Loderas (Completos y sin daños)", critical: true },
+    { id: "at_lat_escalera", label: "Escalera (Bien sujeta)", critical: true },
+
+    // PARTE POSTERIOR DE LA UNIDAD
+    { id: "head_post_at", label: "PARTE POSTERIOR DE LA UNIDAD", isHeader: true },
+    { id: "at_post_luces", label: "Sistema de luces (Funcionando)", critical: true },
+    { id: "at_post_defensa", label: "Defensa (Que exista, sujeción correcta y sin daños)", critical: true },
+
+    // PARTE INFERIOR
+    { id: "head_inf_at", label: "PARTE INFERIOR DE LA UNIDAD", isHeader: true },
+    { id: "at_inf_cinta", label: "Cinta estática (Que toque el piso)", critical: true },
+
+    // EQUIPO DE EMERGENCIA
+    { id: "head_em_at", label: "EQUIPO DE EMERGENCIA", isHeader: true },
+    { id: "at_em_botiquin", label: "Botiquín y Extintor 9kg ABC (A bordo, vigente)", critical: true },
+    { id: "at_em_senales", label: "Señales, Letreros y Calzas (A bordo)", critical: true },
+
+    // LETREROS, SEÑALES Y AVISOS
+    { id: "head_letreros_at", label: "LETREROS, SEÑALES Y AVISOS", isHeader: true },
+    { id: "at_letreros", label: "Letreros, señales y avisos (Claros, legibles y no obstruidos)", critical: true }
 ];
 
 
@@ -553,8 +628,8 @@ const LOGO_URL = "img/logo.png";
 
 // Configuración de Supabase
 const SUPABASE_CONFIG = {
-    URL: "https://sbnfsmsrrfngmazpwivo.supabase.co",
-    KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNibmZzbXNycmZuZ21henB3aXZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MDM2NDIsImV4cCI6MjA4NjE3OTY0Mn0.DQ5-92o3rKOBK1WnIon4PLnB6J7pK32p-5RslalLRnA"
+    URL: "https://rwnowbeapticgkhldkoi.supabase.co",
+    KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3bm93YmVhcHRpY2draGxka29pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTAzNTYsImV4cCI6MjA5MTA4NjM1Nn0.JXeRHyb3LMhMWdjCme6wLdZGunixTyJxX0YE_4L2644"
 };
 
 // Función para obtener los puntos de inspección según el tipo de ruta
