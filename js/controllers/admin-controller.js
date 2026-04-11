@@ -808,6 +808,58 @@ const AdminController = {
     
     async sendOrdenEmail(oId) { 
         console.log('Enviar email', oId); 
+    },
+    
+    // Agrega estas dos funciones al final del objeto AdminController
+    showPasswordModal() {
+        if (App.appState.userRole !== 'admin') return alert("❌ Solo los administradores principales pueden cambiar contraseñas.");
+        
+        const html = `
+            <div style="padding: 20px; text-align: left; font-family: Arial, sans-serif;">
+                <h3 style="margin-bottom: 10px; color: #1e293b; font-size: 18px;">🔐 Cambiar Contraseña</h3>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
+                    Ingresa el correo del empleado y su nueva contraseña.
+                </p>
+                <form onsubmit="AdminController.handlePasswordReset(event)">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: bold;">Correo</label>
+                        <input type="email" id="resetEmail" required style="width: 100%; padding: 10px; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 12px; font-weight: bold;">Nueva Contraseña</label>
+                        <input type="password" id="resetPassword" required minlength="6" style="width: 100%; padding: 10px; border-radius: 6px;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" onclick="ModalService.close()" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" id="btnResetPwd" class="btn btn-primary">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        ModalService.show(html);
+    },
+
+    async handlePasswordReset(e) {
+        e.preventDefault();
+        const email = document.getElementById('resetEmail').value.trim();
+        const password = document.getElementById('resetPassword').value;
+        const btn = document.getElementById('btnResetPwd');
+
+        if(!confirm(`¿Estás seguro de cambiar la contraseña de "${email}"?`)) return;
+
+        btn.disabled = true;
+        btn.innerText = "Actualizando...";
+
+        try {
+            await StorageService.resetUserPassword(email, password);
+            alert(`✅ Contraseña actualizada correctamente para ${email}`);
+            ModalService.close();
+        } catch (error) {
+            alert(`❌ Error: ${error.message}`);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Actualizar";
+        }
     }
 };
 

@@ -22,11 +22,11 @@ const HomeView = {
                             🔧 Orden de Servicio
                         </button>
                         
-                        <button onclick="App.goToStep('admin-login')" class="btn btn-secondary">
+                        <button onclick="App.goToStep('admin-panel')" class="btn btn-secondary">
                             👨‍💼 Panel Supervisor
                         </button>
                         
-                        <button onclick="App.goToStep('taller-login')" class="btn" style="background: #334155; color: white;">
+                        <button onclick="App.goToStep('taller-panel')" class="btn" style="background: #334155; color: white;">
                             🛻 Panel Taller
                         </button>
 
@@ -34,9 +34,13 @@ const HomeView = {
                             📍 GEOCERCAS
                         </button>
 
-                        <button onclick="App.goToStep('supervision')" class="btn" style="background: #0867ec; color: white;">
+                        <button onclick="App.goToStep('supervision-form')" class="btn" style="background: #0867ec; color: white;">
                             👨‍🔧 SUPERVISIÓN EN CAMPO
                         </button>       
+
+                        <button onclick="AuthController.logout()" class="btn" style="background: #ef4444; color: white; margin-top: 15px;">
+                            🚪 Cerrar Sesión
+                        </button>
 
                     </div>
                     

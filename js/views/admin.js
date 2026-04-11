@@ -90,6 +90,12 @@ const AdminView = {
                                 style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                         Exportar CSV
                         </button>
+                    ${appState.userRole === 'admin' ? `
+                        <button onclick="AdminController.showPasswordModal()"
+                                style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                            🔐 Accesos
+                        </button>
+                    ` : ''}
                     </div>
                 </div>
                 
