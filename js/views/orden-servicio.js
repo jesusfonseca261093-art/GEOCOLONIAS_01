@@ -7,14 +7,16 @@ const OrdenServicioView = {
         
         return `
             <div>
-                <div class="header">
+                <div class="header" style="background: #1e40af; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="${CONFIG.LOGO_URL}" alt="Logo" style="height: 40px;">
-                        <div class="logo">Orden de Servicio</div>
+                        <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 26px;">
+                            <i class='bx bx-menu'></i>
+                        </button>
+                        <img src="${CONFIG.LOGO_URL}" onclick="toggleMenu()" alt="Logo" style="height: 35px; cursor: pointer; object-fit: contain;">
+                        <div class="logo" style="font-weight: 600; font-size: 16px; color: white;">Orden de Servicio</div>
                     </div>
-                    <button onclick="App.goToStep('home')" 
-                            style="background: none; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 12px;">
-                        Cancelar
+                    <button onclick="App.goToStep('home')" class="btn-icon" title="Volver al inicio" style="color: white;">
+                        <i class='bx bx-home-alt'></i>
                     </button>
                 </div>
                 
@@ -23,7 +25,7 @@ const OrdenServicioView = {
                         <div class="card">
                             <h3 style="margin-bottom: 16px; color: #1e293b;">📋 Datos de la Orden</h3>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="grid-responsive" style="margin-bottom: 0;">
                                 <div class="form-group">
                                     <label>Unidad</label>
                                     <input type="text" 
@@ -63,7 +65,7 @@ const OrdenServicioView = {
                                 </datalist>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div class="grid-responsive" style="margin-bottom: 16px;">
                                 <div class="form-group">
                                     <label>Hora del Reporte</label>
                                     <input type="time" 
@@ -95,40 +97,43 @@ const OrdenServicioView = {
                             
                             <div class="form-group">
                                 <label>Lugar del Mantenimiento</label>
-                                <div style="display: flex; gap: 20px; margin-top: 8px;">
-                                    <label style="display: flex; align-items: center; gap: 5px;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 8px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                                         <input type="radio" 
                                                name="mantenimientoLugar" 
                                                value="taller" 
                                                ${appState.ordenData.mantenimientoLugar === 'taller' ? 'checked' : ''}
-                                               onchange="OrdenController.updateOrdenData('mantenimientoLugar', this.value, App.appState)">
-                                        Taller
+                                               onchange="OrdenController.updateOrdenData('mantenimientoLugar', this.value, App.appState)"
+                                               style="width: 18px; height: 18px; margin: 0; flex-shrink: 0; cursor: pointer;">
+                                        <span style="color: #334155;">Taller</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                                         <input type="radio" 
                                                name="mantenimientoLugar" 
                                                value="ruta" 
                                                ${appState.ordenData.mantenimientoLugar === 'ruta' ? 'checked' : ''}
-                                               onchange="OrdenController.updateOrdenData('mantenimientoLugar', this.value, App.appState)">
-                                        Ruta
+                                               onchange="OrdenController.updateOrdenData('mantenimientoLugar', this.value, App.appState)"
+                                               style="width: 18px; height: 18px; margin: 0; flex-shrink: 0; cursor: pointer;">
+                                        <span style="color: #334155;">Ruta</span>
                                     </label>
                                 </div>
                             </div>
                             
                             <div class="form-group">
                                 <label>Tipo de Mantenimiento</label>
-                                <div style="display: flex; gap: 15px; margin-top: 8px;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 8px;">
                                     ${CONFIG.TIPOS_MANTENIMIENTO.map(tipo => {
                                         const value = tipo.toLowerCase().includes('correctivo') ? 'correctivo' : 
                                                      tipo.toLowerCase().includes('preventivo') ? 'preventivo' : 'otras';
                                         return `
-                                            <label style="display: flex; align-items: center; gap: 5px;">
+                                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                                                 <input type="radio" 
                                                        name="tipoMantenimiento" 
                                                        value="${value}"
                                                        ${appState.ordenData.tipoMantenimiento === value ? 'checked' : ''}
-                                                       onchange="OrdenController.updateOrdenData('tipoMantenimiento', this.value, App.appState)">
-                                                ${tipo}
+                                                       onchange="OrdenController.updateOrdenData('tipoMantenimiento', this.value, App.appState)"
+                                                       style="width: 18px; height: 18px; margin: 0; flex-shrink: 0; cursor: pointer;">
+                                                <span style="color: #334155;">${tipo}</span>
                                             </label>
                                         `;
                                     }).join('')}
@@ -155,9 +160,9 @@ const OrdenServicioView = {
                             
                             <div class="form-group">
                                 <label>Puntos Críticos Revisados (Selecciona los verificados)</label>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 8px;">
                                     ${CONFIG.PUNTOS_CRITICOS.map((punto, index) => `
-2345                                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; height: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 12px; padding: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; height: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                                             <input type="checkbox" 
                                                    value="${punto}"
                                                    ${appState.ordenData.puntosCriticos.includes(punto) ? 'checked' : ''}

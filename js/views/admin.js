@@ -12,9 +12,9 @@ const AdminView = {
                         <div class="form-group">
                             <label>Clave de acceso</label>
                             <input type="password" 
-                                   id="adminPassword"
-                                   placeholder="Ingresa la clave"
-                                   style="text-align: center; font-weight: bold;">
+                                    id="adminPassword"
+                                    placeholder="Ingresa la clave"
+                                    style="text-align: center; font-weight: bold;">
                         </div>
                         
                         <button onclick="AdminController.checkPassword()" class="btn btn-primary">
@@ -43,9 +43,9 @@ const AdminView = {
                         <div class="form-group">
                             <label>Clave de acceso</label>
                             <input type="password" 
-                                   id="tallerPassword"
-                                   placeholder="Ingresa la clave"
-                                   style="text-align: center; font-weight: bold;">
+                                    id="tallerPassword"
+                                    placeholder="Ingresa la clave"
+                                    style="text-align: center; font-weight: bold;">
                         </div>
                         
                         <button onclick="AdminController.checkTallerPassword()" class="btn btn-primary" style="background: #0f172a;">
@@ -65,104 +65,173 @@ const AdminView = {
     
     // Vista del panel SUPERVISOR
     renderPanel(appState) {
+        const d = new Date();
+        const cMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const cDate = `${cMonth}-${String(d.getDate()).padStart(2, '0')}`;
+        
+        const mBase = appState.filterMonth === cMonth && !appState.filterDate;
+        const tBase = appState.filterDate === cDate;
+
         return `
             <div>
-                <div class="header" style="background: #1e293b; color: white;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <button onclick="App.goToStep('home')"
-                                style="background: none; border: none; color: white; font-size: 20px;">
-                            ←
+                <div class="header" style="background: #1e40af; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 12px 16px; width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                        <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 24px; padding: 4px; width: auto; height: auto;">
+                            <i class='bx bx-menu'></i>
                         </button>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${CONFIG.LOGO_URL}" style="height: 35px; background: white; padding: 2px; border-radius: 4px;">
-                            <div>
-                                <div class="logo" style="color: white;">Panel Supervisor</div>
-                                <div style="font-size: 10px; opacity: 0.8;">Gestión de reportes y órdenes</div>
-                            </div>
+                        <div style="display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0;" onclick="toggleMenu()">
+                            <img src="${CONFIG.LOGO_URL}" style="height: 28px; max-width: 80px; object-fit: contain;">
+                            <div class="logo" style="color: white; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Panel Sup.</div>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                    <button onclick="AdminController.exportAllToPDF()"
-                            style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
-                        📄 Exportar PDFs
-                    </button>
-                        <button onclick="AdminController.exportToCSV()"
-                                style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
-                        Exportar CSV
+                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                        <button onclick="AdminController.showExportOptions()"
+                                style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <i class='bx bxs-file-pdf'></i> PDF
                         </button>
                     ${appState.userRole === 'admin' ? `
                         <button onclick="AdminController.showPasswordModal()"
-                                style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                            🔐 Accesos
+                                style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i class='bx bx-lock-alt'></i> Accesos
                         </button>
                     ` : ''}
                     </div>
                 </div>
                 
-                <div class="container">
+                <div class="container" style="padding: 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
                     <!-- Filtros -->
-                    <div class="card">
-                        <div class="grid-responsive">
-                            <div class="form-group">
+                    <div class="card" style="margin-bottom: 20px; box-sizing: border-box; width: 100%;">
+                        <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+                            <div class="form-group" style="margin-bottom: 0;">
                                 <label>Filtrar por mes</label>
                                 <input type="month" 
-                                       id="filterMonth"
-                                       value="${appState.filterMonth || ''}"
-                                       onchange="AdminController.updateFilterMonth(this.value)">
+                                        id="filterMonth"
+                                        value="${appState.filterMonth || ''}"
+                                        onchange="AdminController.updateFilterMonth(this.value)"
+                                        style="width: 100%; box-sizing: border-box; min-width: 0;">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="margin-bottom: 0;">
                                 <label>Filtrar por fecha</label>
                                 <input type="date" 
-                                       id="filterDate"
-                                       value="${appState.filterDate}"
-                                       onchange="AdminController.updateFilterDate(this.value)">
+                                        id="filterDate"
+                                        value="${appState.filterDate}"
+                                        onchange="AdminController.updateFilterDate(this.value)"
+                                        style="width: 100%; box-sizing: border-box; min-width: 0;">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="margin-bottom: 0;">
                                 <label>Buscar</label>
                                 <input type="text" 
-                                       id="filterSearch"
-                                       value="${appState.filterSearch}"
-                                       oninput="AdminController.updateFilterSearch(this.value)"
-                                       placeholder="Unidad, operador...">
+                                        id="filterSearch"
+                                        value="${appState.filterSearch}"
+                                        oninput="AdminController.updateFilterSearch(this.value)"
+                                        placeholder="Unidad, operador..."
+                                        style="width: 100%; box-sizing: border-box; min-width: 0;">
                             </div>
                         </div>
                         
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
-                            <div>Total: <span id="totalReports">0</span> registros</div>
-                            <button onclick="AdminController.clearAllReports()" 
-                                    style="color: #dc2626; background: none; border: none; font-size: 12px;">
-                                Limpiar todo
-                            </button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+                            <div>Total listado: <span id="totalReports">0</span></div>
+                            <div style="display: flex; gap: 12px;">
+                                <button onclick="AdminController.resetFilters()" 
+                                        style="color: #0284c7; background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <i class='bx bx-filter-alt'></i> Quitar filtros
+                                </button>
+                                <button onclick="AdminController.clearAllReports()" 
+                                        style="color: #dc2626; background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <i class='bx bx-trash'></i> Eliminar todo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas rápidas -->
+                    <div id="adminGlobalStats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 24px;">
+                        <!-- Tarjeta del Mes -->
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; margin-bottom: 10px; letter-spacing: 0.5px;">📅 TODO EL MES</div>
+                            <div style="display: flex; justify-content: space-between; text-align: center;">
+                                <div onclick="AdminController.applyQuickFilter('month', 'all')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && (!appState.filterStatus || appState.filterStatus === 'all') ? '#38bdf8' : 'transparent'}; background: ${mBase && (!appState.filterStatus || appState.filterStatus === 'all') ? '#bae6fd' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statMonthTotal" style="font-size: 18px; font-weight: bold; color: #0284c7;">0</div>
+                                    <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Total</div>
+                                </div>
+                                <div onclick="AdminController.applyQuickFilter('month', 'approved')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && appState.filterStatus === 'approved' ? '#4ade80' : 'transparent'}; background: ${mBase && appState.filterStatus === 'approved' ? '#bbf7d0' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statMonthApp" style="font-size: 18px; font-weight: bold; color: #16a34a;">0</div>
+                                    <div id="lblMonthApp" style="font-size: 10px; color: #15803d; margin-top: 2px;">Aprobados</div>
+                                </div>
+                                <div onclick="AdminController.applyQuickFilter('month', 'rejected')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && appState.filterStatus === 'rejected' ? '#f87171' : 'transparent'}; background: ${mBase && appState.filterStatus === 'rejected' ? '#fecaca' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statMonthRej" style="font-size: 18px; font-weight: bold; color: #dc2626;">0</div>
+                                    <div id="lblMonthRej" style="font-size: 10px; color: #b91c1c; margin-top: 2px;">Fallas</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta de Hoy -->
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; margin-bottom: 10px; letter-spacing: 0.5px;">☀️ SOLO HOY</div>
+                            <div style="display: flex; justify-content: space-between; text-align: center;">
+                                <div onclick="AdminController.applyQuickFilter('today', 'all')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && (!appState.filterStatus || appState.filterStatus === 'all') ? '#38bdf8' : 'transparent'}; background: ${tBase && (!appState.filterStatus || appState.filterStatus === 'all') ? '#bae6fd' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statTodayTotal" style="font-size: 18px; font-weight: bold; color: #0284c7;">0</div>
+                                    <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Total</div>
+                                </div>
+                                <div onclick="AdminController.applyQuickFilter('today', 'approved')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && appState.filterStatus === 'approved' ? '#4ade80' : 'transparent'}; background: ${tBase && appState.filterStatus === 'approved' ? '#bbf7d0' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statTodayApp" style="font-size: 18px; font-weight: bold; color: #16a34a;">0</div>
+                                    <div id="lblTodayApp" style="font-size: 10px; color: #15803d; margin-top: 2px;">Aprobados</div>
+                                </div>
+                                <div onclick="AdminController.applyQuickFilter('today', 'rejected')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && appState.filterStatus === 'rejected' ? '#f87171' : 'transparent'}; background: ${tBase && appState.filterStatus === 'rejected' ? '#fecaca' : 'transparent'}; transition: all 0.2s;">
+                                    <div id="statTodayRej" style="font-size: 18px; font-weight: bold; color: #dc2626;">0</div>
+                                    <div id="lblTodayRej" style="font-size: 10px; color: #b91c1c; margin-top: 2px;">Fallas</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Pestañas -->
-                    <div style="display: flex; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap;">
+                    <!-- Pestañas (Segmented Control) -->
+                    <div style="display: flex; margin-bottom: 24px; background: #f1f5f9; padding: 6px; border-radius: 16px; flex-wrap: wrap; gap: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                         <button id="tabChecklistsBtn" onclick="AdminController.switchTab('checklists')" 
-                                style="flex: 1; min-width: 100px; padding: 12px; background: ${appState.activeTab === 'checklists' ? '#1e40af' : '#f8fafc'}; color: ${appState.activeTab === 'checklists' ? 'white' : '#475569'}; border: none; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                                style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'checklists' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'checklists' ? '#1e40af' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'checklists' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             📋 Inspecciones
                         </button>
                         <button id="tabOrdenesBtn" onclick="AdminController.switchTab('ordenes')" 
-                                style="flex: 1; min-width: 100px; padding: 12px; background: ${appState.activeTab === 'ordenes' ? '#f59e0b' : '#f8fafc'}; color: ${appState.activeTab === 'ordenes' ? 'white' : '#475569'}; border: none; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                                style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'ordenes' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'ordenes' ? '#f59e0b' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'ordenes' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             🔧 Órdenes
                         </button>
                         <button id="tabSupervisionesBtn" onclick="AdminController.switchTab('supervisiones')" 
-                                style="flex: 1; min-width: 100px; padding: 12px; background: ${appState.activeTab === 'supervisiones' ? '#0867ec' : '#f8fafc'}; color: ${appState.activeTab === 'supervisiones' ? 'white' : '#475569'}; border: none; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                                style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'supervisiones' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'supervisiones' ? '#0867ec' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'supervisiones' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             👨‍🔧 Supervisiones
                         </button>
                         <button id="tabMapasBtn" onclick="AdminController.switchTab('mapas')" 
-                                style="flex: 1; min-width: 100px; padding: 12px; background: ${appState.activeTab === 'mapas' ? '#10b981' : '#f8fafc'}; color: ${appState.activeTab === 'mapas' ? 'white' : '#475569'}; border: none; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                                style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'mapas' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'mapas' ? '#10b981' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'mapas' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             🗺️ Mapas de Quejas
                         </button>
                     </div>
                     
+                    <!-- Sub-pestañas divisoras para Inspecciones -->
+                    <style>.sub-tabs-container::-webkit-scrollbar { display: none; }</style>
+                    <div id="subTabsChecklists" class="sub-tabs-container" style="display: ${appState.activeTab === 'checklists' ? 'flex' : 'none'}; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -ms-overflow-style: none;">
+                        ${['Todos', 'Utilitario', 'Mantenimiento', 'Montacargas', 'Cilindros', 'Autotanque'].map(tipo => {
+                            const isActive = (!appState.filterTipoRuta && tipo === 'Todos') || appState.filterTipoRuta === tipo;
+                            return `
+                                <button id="btnSubFilter-${tipo}" onclick="AdminController.updateFilterTipoRuta('${tipo}')"
+                                        style="white-space: nowrap; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+                                                border: 1px solid ${isActive ? '#1e40af' : '#cbd5e1'};
+                                                background: ${isActive ? '#eff6ff' : '#f8fafc'};
+                                                color: ${isActive ? '#1e40af' : '#475569'};">
+                                    ${tipo === 'Todos' ? '📋 Todos' : 
+                                        tipo === 'Utilitario' ? '🚗 Utilitario' :
+                                        tipo === 'Mantenimiento' ? '🔧 Mantenimiento' :
+                                        tipo === 'Montacargas' ? '📦 Montacargas' :
+                                        tipo === 'Cilindros' ? '🛢️ Cilindros' : '🚛 Autotanque'}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+
                     <!-- Gráfica de Resumen (solo para no mapas) -->
                     ${appState.activeTab !== 'mapas' ? `
                         <div class="card" style="margin-bottom: 16px;">
                             <h4 id="chartTitle" style="margin-bottom: 10px; color: #1e293b; font-size: 14px;">
                                 ${appState.activeTab === 'checklists' ? '📊 Estado de Inspecciones' : 
-                                  appState.activeTab === 'ordenes' ? '📊 Estado de Órdenes' : 
-                                  '📊 Supervisiones en Campo'}
+                                    appState.activeTab === 'ordenes' ? '📊 Estado de Órdenes' : 
+                                    '📊 Supervisiones en Campo'}
                             </h4>
                             <div style="height: 200px; position: relative;"><canvas id="statsChart"></canvas></div>
                         </div>
@@ -179,24 +248,29 @@ const AdminView = {
     
     // Vista del panel TALLER
     renderTallerPanel(appState) {
+        const d = new Date();
+        const cMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const cDate = `${cMonth}-${String(d.getDate()).padStart(2, '0')}`;
+        
+        const mBase = appState.filterTallerMonth === cMonth && !appState.filterTallerDate;
+        const tBase = appState.filterTallerDate === cDate;
+
         return `
             <div>
-                <div class="header" style="background: #0f172a; color: white;">
+                <div class="header" style="background: #1e40af; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <button onclick="App.goToStep('home')"
-                                style="background: none; border: none; color: white; font-size: 20px;">
-                            ←
+                        <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 26px;">
+                            <i class='bx bx-menu'></i>
                         </button>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${CONFIG.LOGO_URL}" style="height: 35px; background: white; padding: 2px; border-radius: 4px;">
-                            <div>
-                                <div class="logo" style="color: white;">Panel Taller</div>
-                                <div style="font-size: 10px; opacity: 0.8;">Gestión de órdenes de servicio</div>
+                        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="toggleMenu()">
+                            <img src="${CONFIG.LOGO_URL}" style="height: 35px; object-fit: contain; background: white; padding: 2px; border-radius: 4px;">
+                            <div style="display: none; @media(min-width:600px){display:block;}">
+                                <div class="logo" style="color: white; font-size: 16px;">Panel Taller</div>
                             </div>
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button onclick="AdminController.exportAllToPDF()"
+                        <button onclick="AdminController.showExportOptions()"
                                 style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                             📄 Exportar PDF
                         </button>
@@ -210,16 +284,21 @@ const AdminView = {
                 <div class="container">
                     <!-- Filtros simplificados -->
                     <div class="card">
-                        <div style="display: flex; gap: 10px; align-items: flex-end;">
-                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
                                 <label>Buscar por unidad o folio</label>
                                 <input type="text" 
-                                       id="filterSearch"
-                                       value="${appState.filterSearch}"
-                                       oninput="AdminController.updateTallerFilter(this.value)"
-                                       placeholder="Ej: GU-1260 o FOLIO-123">
+                                        id="filterSearch"
+                                        value="${appState.filterSearch}"
+                                        oninput="AdminController.updateTallerFilter(this.value)"
+                                        placeholder="Ej: GU-1260 o FOLIO-123">
                             </div>
-                            <button onclick="AdminController.loadTallerPanel()" 
+                            <button onclick="AdminController.resetTallerFilters()" 
+                                    class="btn btn-secondary" 
+                                    style="width: auto; padding: 10px 20px; margin: 0;">
+                                Limpiar
+                            </button>
+                            <button onclick="AdminController.loadTallerPanel()"
                                     class="btn btn-primary" 
                                     style="width: auto; padding: 10px 20px; margin: 0;">
                                 Buscar
@@ -228,18 +307,50 @@ const AdminView = {
                     </div>
                     
                     <!-- Estadísticas rápidas -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;">
-                        <div class="stat-card" style="background: #fee2e2;">
-                            <div class="stat-value" style="color: #dc2626;" id="pendientesCount">0</div>
-                            <div class="stat-label">Pendientes</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                        <!-- Tarjeta del Mes -->
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; margin-bottom: 10px; letter-spacing: 0.5px;">📅 TODO EL MES</div>
+                            <div style="display: flex; justify-content: space-between; text-align: center; gap: 4px;">
+                                <div onclick="AdminController.applyTallerQuickFilter('month', 'all')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && (!appState.filterTallerStatus || appState.filterTallerStatus === 'all') ? '#38bdf8' : 'transparent'}; background: ${mBase && (!appState.filterTallerStatus || appState.filterTallerStatus === 'all') ? '#bae6fd' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tMonthTotal" style="font-size: 16px; font-weight: bold; color: #0284c7;">0</div>
+                                    <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Total</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('month', 'pendiente')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && appState.filterTallerStatus === 'pendiente' ? '#f87171' : 'transparent'}; background: ${mBase && appState.filterTallerStatus === 'pendiente' ? '#fecaca' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tMonthPend" style="font-size: 16px; font-weight: bold; color: #dc2626;">0</div>
+                                    <div style="font-size: 9px; color: #b91c1c; margin-top: 2px;">Pend.</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('month', 'en_proceso')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && appState.filterTallerStatus === 'en_proceso' ? '#6366f1' : 'transparent'}; background: ${mBase && appState.filterTallerStatus === 'en_proceso' ? '#c7d2fe' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tMonthProc" style="font-size: 16px; font-weight: bold; color: #4338ca;">0</div>
+                                    <div style="font-size: 9px; color: #3730a3; margin-top: 2px;">Proc.</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('month', 'completado')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${mBase && appState.filterTallerStatus === 'completado' ? '#4ade80' : 'transparent'}; background: ${mBase && appState.filterTallerStatus === 'completado' ? '#bbf7d0' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tMonthComp" style="font-size: 16px; font-weight: bold; color: #16a34a;">0</div>
+                                    <div style="font-size: 9px; color: #15803d; margin-top: 2px;">Comp.</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: #dbeafe;">
-                            <div class="stat-value" style="color: #2563eb;" id="procesoCount">0</div>
-                            <div class="stat-label">En Proceso</div>
-                        </div>
-                        <div class="stat-card" style="background: #dcfce7;">
-                            <div class="stat-value" style="color: #16a34a;" id="completadasCount">0</div>
-                            <div class="stat-label">Completadas</div>
+                        <!-- Tarjeta de Hoy -->
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; margin-bottom: 10px; letter-spacing: 0.5px;">☀️ SOLO HOY</div>
+                            <div style="display: flex; justify-content: space-between; text-align: center; gap: 4px;">
+                                <div onclick="AdminController.applyTallerQuickFilter('today', 'all')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && (!appState.filterTallerStatus || appState.filterTallerStatus === 'all') ? '#38bdf8' : 'transparent'}; background: ${tBase && (!appState.filterTallerStatus || appState.filterTallerStatus === 'all') ? '#bae6fd' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tTodayTotal" style="font-size: 16px; font-weight: bold; color: #0284c7;">0</div>
+                                    <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Total</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('today', 'pendiente')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && appState.filterTallerStatus === 'pendiente' ? '#f87171' : 'transparent'}; background: ${tBase && appState.filterTallerStatus === 'pendiente' ? '#fecaca' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tTodayPend" style="font-size: 16px; font-weight: bold; color: #dc2626;">0</div>
+                                    <div style="font-size: 9px; color: #b91c1c; margin-top: 2px;">Pend.</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('today', 'en_proceso')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && appState.filterTallerStatus === 'en_proceso' ? '#6366f1' : 'transparent'}; background: ${tBase && appState.filterTallerStatus === 'en_proceso' ? '#c7d2fe' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tTodayProc" style="font-size: 16px; font-weight: bold; color: #4338ca;">0</div>
+                                    <div style="font-size: 9px; color: #3730a3; margin-top: 2px;">Proc.</div>
+                                </div>
+                                <div onclick="AdminController.applyTallerQuickFilter('today', 'completado')" style="cursor: pointer; padding: 6px; border-radius: 8px; border: 2px solid ${tBase && appState.filterTallerStatus === 'completado' ? '#4ade80' : 'transparent'}; background: ${tBase && appState.filterTallerStatus === 'completado' ? '#bbf7d0' : 'transparent'}; flex: 1; transition: all 0.2s;">
+                                    <div id="tTodayComp" style="font-size: 16px; font-weight: bold; color: #16a34a;">0</div>
+                                    <div style="font-size: 9px; color: #15803d; margin-top: 2px;">Comp.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -294,13 +405,13 @@ const AdminView = {
             
             return `
                 <tr>
-                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px;">${component}</td>
-                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px;">${criterion}</td>
-                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; font-weight: bold;">
-                        ${isApproved ? 'X' : ''}
+                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-size: 9px; color: #334155;">${component}</td>
+                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-size: 9px; color: #334155;">${criterion}</td>
+                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-size: 9px; text-align: center; font-weight: bold; color: #1e40af;">
+                        ${isApproved ? '✓' : ''}
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; font-weight: bold; color: ${isRejected ? '#dc2626' : '#000'};">
-                        ${isRejected ? 'X' : ''}
+                    <td style="border: 1px solid #cbd5e1; padding: 6px; font-size: 9px; text-align: center; font-weight: bold; color: ${isRejected ? '#dc2626' : '#334155'};">
+                        ${isRejected ? '✗' : ''}
                     </td>
                 </tr>
             `;
@@ -513,7 +624,7 @@ const AdminView = {
                                 <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                                     ${CONFIG.TIPOS_MANTENIMIENTO.map(tipo => {
                                         const value = tipo.toLowerCase().includes('correctivo') ? 'correctivo' : 
-                                                     tipo.toLowerCase().includes('preventivo') ? 'preventivo' : 'otras';
+                                                        tipo.toLowerCase().includes('preventivo') ? 'preventivo' : 'otras';
                                         const checked = orden.tipoMantenimiento === value;
                                         return `<div style="display: flex; align-items: center; gap: 5px;">
                                             <div style="border: 1px solid #000; width: 12px; height: 8px; display: inline-block; ${checked ? 'background-color: #000;' : ''}"></div> ${tipo}
@@ -692,13 +803,13 @@ const AdminView = {
                             <div style="font-weight: bold; margin-top: 4px;">
                                 Folio: ${orden.folio || 'N/A'}
                                 <span style="font-size: 10px; padding: 2px 6px; border-radius: 10px; 
-                                      background: ${orden.estado === 'pendiente' ? '#fef3c7' : 
-                                                   orden.estado === 'en_proceso' ? '#dbeafe' : '#dcfce7'}; 
-                                      color: ${orden.estado === 'pendiente' ? '#92400e' : 
-                                              orden.estado === 'en_proceso' ? '#1e40af' : '#166534'}; 
-                                      margin-left: 8px;">
+                                        background: ${orden.estado === 'pendiente' ? '#fef3c7' : 
+                                                    orden.estado === 'en_proceso' ? '#dbeafe' : '#dcfce7'}; 
+                                        color: ${orden.estado === 'pendiente' ? '#92400e' : 
+                                                orden.estado === 'en_proceso' ? '#1e40af' : '#166534'}; 
+                                        margin-left: 8px;">
                                     ${orden.estado === 'pendiente' ? 'PENDIENTE' : 
-                                      orden.estado === 'en_proceso' ? 'EN PROCESO' : 'COMPLETADO'}
+                                    orden.estado === 'en_proceso' ? 'EN PROCESO' : 'COMPLETADO'}
                                 </span>
                             </div>
                         </div>
@@ -759,8 +870,8 @@ const AdminView = {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                         <div style="font-size: 11px; color: #64748b; display: flex; gap: 10px;">
                             ${supervision.evidenciasFotos ? 
-                              `📸 ${supervision.evidenciasFotos.length} foto(s)` : 
-                              supervision.evidenciaFoto ? '📸 1 foto' : '📸 Sin fotos'}
+                                `📸 ${supervision.evidenciasFotos.length} foto(s)` : 
+                                supervision.evidenciaFoto ? '📸 1 foto' : '📸 Sin fotos'}
                             ${supervision.coordenadas ? ' | 🗺️ Geo' : ''}
                         </div>
                         <button onclick="AdminController.viewSupervision('${supervision.id}')"

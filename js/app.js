@@ -13,6 +13,8 @@ const App = {
         supervisiones: [],
         filterDate: '',
         filterSearch: '',
+        filterTipoRuta: 'Todos',
+        filterTallerStatus: 'all',
         activeTab: 'checklists',
         formData: { operador: '', eco: '', km: '', ruta: '', observaciones: '' },
         ordenData: { 
@@ -147,6 +149,9 @@ const App = {
                 break;
             case 'form':
                 app.innerHTML = FormView.render(this.appState);
+                break;
+            case 'checklist-verificar':
+                app.innerHTML = ChecklistVerificarView.render(this.appState);
                 break;
             case 'orden-servicio':
                 app.innerHTML = OrdenServicioView.render(this.appState);

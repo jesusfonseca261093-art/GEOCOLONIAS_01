@@ -27,6 +27,7 @@ const AdminController = {
     // Cambiar pestaña
     switchTab(tab) {
         App.appState.activeTab = tab;
+        App.appState.filterStatus = 'all'; // Limpiar el filtro de tarjetas al cambiar de pestaña
         this.updateTabStyles(tab);
         if (tab === 'mapas') {
             const c = document.getElementById('reportsList');
@@ -50,6 +51,74 @@ const AdminController = {
         if (App.appState.activeTab !== 'mapas') this.loadReportsIntoPanel(); 
     },
     
+    updateFilterTipoRuta(tipo) {
+        App.appState.filterTipoRuta = tipo;
+        App.render(); // Re-renderiza para actualizar tanto los estilos del botón activo como los datos
+    },
+    
+    updateFilterStatus(status) {
+        App.appState.filterStatus = status;
+        App.render(); // Re-renderiza para actualizar el color de las tarjetas y filtrar la lista
+    },
+    
+    applyQuickFilter(period, status) {
+        const hoy = new Date();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const anio = hoy.getFullYear();
+
+        if (period === 'month') {
+            App.appState.filterMonth = `${anio}-${mes}`;
+            App.appState.filterDate = '';
+        } else if (period === 'today') {
+            App.appState.filterDate = `${anio}-${mes}-${dia}`;
+            App.appState.filterMonth = '';
+        }
+        
+        App.appState.filterStatus = status;
+        App.render(); 
+    },
+
+    resetFilters() {
+        App.appState.filterMonth = '';
+        App.appState.filterDate = '';
+        App.appState.filterSearch = '';
+        App.appState.filterStatus = 'all';
+        App.appState.filterTipoRuta = 'Todos';
+        App.render();
+    },
+
+    applyTallerQuickFilter(period, status) {
+        const hoy = new Date();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const anio = hoy.getFullYear();
+
+        if (period === 'month') {
+            App.appState.filterTallerMonth = `${anio}-${mes}`;
+            App.appState.filterTallerDate = '';
+        } else if (period === 'today') {
+            App.appState.filterTallerDate = `${anio}-${mes}-${dia}`;
+            App.appState.filterTallerMonth = '';
+        }
+        
+        App.appState.filterTallerStatus = status;
+        App.render(); 
+    },
+
+    resetTallerFilters() {
+        App.appState.filterSearch = '';
+        App.appState.filterTallerStatus = 'all';
+        App.appState.filterTallerMonth = '';
+        App.appState.filterTallerDate = '';
+        App.render();
+    },
+
+    applyTallerStatusFilter(status) {
+        App.appState.filterTallerStatus = status;
+        App.render();
+    },
+
     updateTallerFilter(s) { 
         App.appState.filterSearch = s; 
         this.loadTallerPanel(); 
@@ -91,6 +160,64 @@ const AdminController = {
             let items = App.appState.activeTab === 'checklists' ? await StorageService.loadReports() :
                         App.appState.activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
                         JSON.parse(localStorage.getItem('supervisiones') || '[]');
+                        
+            // ---- NUEVA LÓGICA: CÁLCULO ESTÁTICO DE MES Y HOY ----
+            const hoy = new Date();
+            const mesActual = hoy.getMonth() + 1;
+            const anioActual = hoy.getFullYear();
+            const diaActual = hoy.getDate();
+            
+            let itemsMes = [];
+            let itemsHoy = [];
+            
+            // Recorrer todos los elementos puros de la base de datos para dividirlos por fecha
+            items.forEach(i => {
+                let y, m, d;
+                if (i.timestamp) {
+                    const date = new Date(i.timestamp);
+                    y = date.getFullYear(); m = date.getMonth() + 1; d = date.getDate();
+                } else if (i.fecha) {
+                    if (i.fecha.includes('/')) {
+                        const parts = i.fecha.split('/').map(Number);
+                        d = parts[0]; m = parts[1]; y = parts[2];
+                    } else if (i.fecha.includes('-')) {
+                        const parts = i.fecha.split('-').map(Number);
+                        y = parts[0]; m = parts[1]; d = parts[2];
+                    }
+                }
+                if (y === anioActual && m === mesActual) {
+                    itemsMes.push(i);
+                    if (d === diaActual) itemsHoy.push(i);
+                }
+            });
+            
+            // Inyectar resultados en la vista
+            const smTotal = document.getElementById('statMonthTotal'); const smApp = document.getElementById('statMonthApp'); const smRej = document.getElementById('statMonthRej');
+            const lmApp = document.getElementById('lblMonthApp'); const lmRej = document.getElementById('lblMonthRej');
+            const stTotal = document.getElementById('statTodayTotal'); const stApp = document.getElementById('statTodayApp'); const stRej = document.getElementById('statTodayRej');
+            const ltApp = document.getElementById('lblTodayApp'); const ltRej = document.getElementById('lblTodayRej');
+
+            if (smTotal && stTotal) {
+                smTotal.textContent = itemsMes.length;
+                stTotal.textContent = itemsHoy.length;
+                
+                if (App.appState.activeTab === 'checklists') {
+                    if(lmApp) { lmApp.textContent = 'Aprobados'; lmRej.textContent = 'Fallas'; }
+                    if(ltApp) { ltApp.textContent = 'Aprobados'; ltRej.textContent = 'Fallas'; }
+                    if(smApp) smApp.textContent = itemsMes.filter(r => !Object.values(r.evaluaciones || {}).includes('rechazado')).length;
+                    if(smRej) smRej.textContent = itemsMes.filter(r => Object.values(r.evaluaciones || {}).includes('rechazado')).length;
+                    if(stApp) stApp.textContent = itemsHoy.filter(r => !Object.values(r.evaluaciones || {}).includes('rechazado')).length;
+                    if(stRej) stRej.textContent = itemsHoy.filter(r => Object.values(r.evaluaciones || {}).includes('rechazado')).length;
+                } else if (App.appState.activeTab === 'ordenes') {
+                    if(lmApp) { lmApp.textContent = 'Completadas'; lmRej.textContent = 'Proceso'; }
+                    if(ltApp) { ltApp.textContent = 'Completadas'; ltRej.textContent = 'Proceso'; }
+                    if(smApp) smApp.textContent = itemsMes.filter(o => o.estado === 'completado' || o.estado === 'terminado').length;
+                    if(smRej) smRej.textContent = itemsMes.filter(o => o.estado === 'pendiente' || o.estado === 'en_proceso').length;
+                    if(stApp) stApp.textContent = itemsHoy.filter(o => o.estado === 'completado' || o.estado === 'terminado').length;
+                    if(stRej) stRej.textContent = itemsHoy.filter(o => o.estado === 'pendiente' || o.estado === 'en_proceso').length;
+                }
+            }
+            // ---- FIN NUEVA LÓGICA ----
             
             let filtered = items.filter(i => {
                 let itemYear, itemMonth, itemDay;
@@ -144,10 +271,35 @@ const AdminController = {
                             i.descripcionFalla?.toLowerCase().includes(s) || 
                             i.folio?.toString().includes(s));
                 }
+            }).filter(i => {
+                // Filtro por tipo de ruta/unidad (Inspecciones)
+                if (App.appState.activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
+                    return (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta;
+                }
+                return true;
             });
             
-            if (t) t.textContent = filtered.length;
-            if (c) c.innerHTML = AdminView.renderReportsList(filtered, App.appState.activeTab);
+
+            // Aplicar Filtro de Status (Click en Tarjetas)
+            let finalFiltered = filtered;
+            if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
+                finalFiltered = filtered.filter(i => {
+                    if (App.appState.activeTab === 'checklists') {
+                        const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
+                        return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
+                    } else if (App.appState.activeTab === 'ordenes') {
+                        const completada = i.estado === 'completado' || i.estado === 'terminado';
+                        return App.appState.filterStatus === 'approved' ? completada : !completada;
+                    } else if (App.appState.activeTab === 'supervisiones') {
+                        const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
+                        return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
+                    }
+                    return true;
+                });
+            }
+            
+            if (t) t.textContent = finalFiltered.length;
+            if (c) c.innerHTML = AdminView.renderReportsList(finalFiltered, App.appState.activeTab);
             
             try { this.updateStatsChart(filtered, App.appState.activeTab); } catch (e) {}
         } catch (error) {
@@ -162,19 +314,110 @@ const AdminController = {
         if (c) c.innerHTML = '<div class="spinner" style="margin:40px auto"></div><p style="text-align:center">Cargando órdenes...</p>';
         
         try {
-            let items = await StorageService.loadOrdenes();
+            const allItems = await StorageService.loadOrdenes();
             
+            // ---- LÓGICA ESTÁTICA DE MES Y HOY ----
+            const hoy = new Date();
+            const mesActual = hoy.getMonth() + 1;
+            const anioActual = hoy.getFullYear();
+            const diaActual = hoy.getDate();
+            
+            let itemsMes = [];
+            let itemsHoy = [];
+            
+            allItems.forEach(i => {
+                let y, m, d;
+                if (i.timestamp) {
+                    const date = new Date(i.timestamp);
+                    y = date.getFullYear(); m = date.getMonth() + 1; d = date.getDate();
+                } else if (i.fecha) {
+                    if (i.fecha.includes('/')) {
+                        const parts = i.fecha.split('/').map(Number);
+                        d = parts[0]; m = parts[1]; y = parts[2];
+                    } else if (i.fecha.includes('-')) {
+                        const parts = i.fecha.split('-').map(Number);
+                        y = parts[0]; m = parts[1]; d = parts[2];
+                    }
+                }
+                if (y === anioActual && m === mesActual) {
+                    itemsMes.push(i);
+                    if (d === diaActual) itemsHoy.push(i);
+                }
+            });
+            
+            // Inyectar resultados en la vista
+            const mt = document.getElementById('tMonthTotal'); const mp = document.getElementById('tMonthPend'); 
+            const mpr = document.getElementById('tMonthProc'); const mc = document.getElementById('tMonthComp');
+            
+            const tt = document.getElementById('tTodayTotal'); const tp = document.getElementById('tTodayPend'); 
+            const tpr = document.getElementById('tTodayProc'); const tc = document.getElementById('tTodayComp');
+
+            if (mt && tt) {
+                mt.textContent = itemsMes.length;
+                mp.textContent = itemsMes.filter(o => o.estado === 'pendiente').length;
+                mpr.textContent = itemsMes.filter(o => o.estado === 'en_proceso').length;
+                mc.textContent = itemsMes.filter(o => o.estado === 'completado' || o.estado === 'terminado').length;
+
+                tt.textContent = itemsHoy.length;
+                tp.textContent = itemsHoy.filter(o => o.estado === 'pendiente').length;
+                tpr.textContent = itemsHoy.filter(o => o.estado === 'en_proceso').length;
+                tc.textContent = itemsHoy.filter(o => o.estado === 'completado' || o.estado === 'terminado').length;
+            }
+            // ---- FIN LÓGICA ESTADÍSTICAS ----
+            
+            let filteredItems = allItems;
+            
+            // 1. Filtro por Fecha (Mes/Dia) para Taller
+            filteredItems = filteredItems.filter(i => {
+                let itemYear, itemMonth, itemDay;
+                if (i.timestamp) {
+                    const fecha = new Date(i.timestamp);
+                    itemYear = fecha.getFullYear(); itemMonth = fecha.getMonth() + 1; itemDay = fecha.getDate();
+                } else if (i.fecha) {
+                    if (i.fecha.includes('/')) {
+                        const [dia, mes, año] = i.fecha.split('/').map(Number);
+                        itemYear = año; itemMonth = mes; itemDay = dia;
+                    } else if (i.fecha.includes('-')) {
+                        const [año, mes, dia] = i.fecha.split('-').map(Number);
+                        itemYear = año; itemMonth = mes; itemDay = dia;
+                    }
+                }
+                
+                if (App.appState.filterTallerMonth) {
+                    if (!itemYear || !itemMonth) return false;
+                    const [year, month] = App.appState.filterTallerMonth.split('-').map(Number);
+                    if (itemYear !== year || itemMonth !== month) return false;
+                }
+                
+                if (App.appState.filterTallerDate) {
+                    if (!itemYear || !itemMonth || !itemDay) return false;
+                    const [year, month, day] = App.appState.filterTallerDate.split('-').map(Number);
+                    if (itemYear !== year || itemMonth !== month || itemDay !== day) return false;
+                }
+                return true;
+            });
+
+            // 2. Aplicar filtro de búsqueda de texto
             if (App.appState.filterSearch) {
                 const s = App.appState.filterSearch.toLowerCase();
-                items = items.filter(i => i.unidad?.toLowerCase().includes(s) || 
+                filteredItems = filteredItems.filter(i => i.unidad?.toLowerCase().includes(s) || 
                                          i.folio?.toString().toLowerCase().includes(s) || 
                                          i.operador?.toLowerCase().includes(s));
             }
             
-            items.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-            this.updateTallerStats(items);
+            // 3. Aplicar filtro de estado (tarjetas)
+            if (App.appState.filterTallerStatus && App.appState.filterTallerStatus !== 'all') {
+                const status = App.appState.filterTallerStatus;
+                if (status === 'completado') {
+                    filteredItems = filteredItems.filter(o => o.estado === 'completado' || o.estado === 'terminado');
+                } else {
+                    filteredItems = filteredItems.filter(o => o.estado === status);
+                }
+            }
             
-            if (c) c.innerHTML = this.renderTallerOrdersList(items);
+            filteredItems.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+            
+            if (c) c.innerHTML = this.renderTallerOrdersList(filteredItems);
         } catch (error) {
             console.error("Error cargando taller:", error);
             if (c) c.innerHTML = '<div class="card"><p>Error al cargar las órdenes</p><button onclick="AdminController.loadTallerPanel()" class="btn btn-primary">Reintentar</button></div>';
@@ -298,17 +541,6 @@ const AdminController = {
             btn.innerText = originalText;
             btn.disabled = false;
         }
-    },
-
-    // Estadísticas del taller
-    updateTallerStats(ordenes) {
-        const pendientes = document.getElementById('pendientesCount');
-        const proceso = document.getElementById('procesoCount');
-        const completadas = document.getElementById('completadasCount');
-        
-        if (pendientes) pendientes.textContent = ordenes.filter(o => o.estado === 'pendiente').length;
-        if (proceso) proceso.textContent = ordenes.filter(o => o.estado === 'en_proceso').length;
-        if (completadas) completadas.textContent = ordenes.filter(o => o.estado === 'completado' || o.estado === 'terminado').length;
     },
 
     // Actualizar estado de orden
@@ -532,6 +764,28 @@ const AdminController = {
                                            i.nombreSupervisor?.toLowerCase().includes(s));
         }
         
+        // Aplicar filtro de tipo de unidad si es inspecciones
+        if (App.appState.activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
+            filtered = filtered.filter(i => (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta);
+        }
+        
+        // Aplicar filtro de tarjetas clickeadas
+        if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
+            filtered = filtered.filter(i => {
+                if (App.appState.activeTab === 'checklists') {
+                    const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
+                    return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
+                } else if (App.appState.activeTab === 'ordenes') {
+                    const completada = i.estado === 'completado' || i.estado === 'terminado';
+                    return App.appState.filterStatus === 'approved' ? completada : !completada;
+                } else if (App.appState.activeTab === 'supervisiones') {
+                    const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
+                    return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
+                }
+                return true;
+            });
+        }
+        
         const csv = App.appState.activeTab === 'supervisiones' ? this.exportToCSVFormat(filtered, 'supervisiones') : 
                     StorageService.exportToCSV(filtered, App.appState.activeTab === 'checklists' ? 'checklists' : 'ordenes');
         
@@ -609,6 +863,28 @@ const AdminController = {
                 } else {
                     return (i.operador?.toLowerCase().includes(s) || i.unidad?.toLowerCase().includes(s) || i.ecoUnidad?.toLowerCase().includes(s) || i.ruta?.toLowerCase().includes(s) || i.descripcion?.toLowerCase().includes(s) || i.descripcionFalla?.toLowerCase().includes(s) || i.folio?.toString().includes(s));
                 }
+            }).filter(i => {
+                if (activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
+                    return (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta;
+                }
+                return true;
+            });
+        }
+        
+        // Aplicar filtro de tarjetas clickeadas
+        if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
+            filtered = filtered.filter(i => {
+                if (activeTab === 'checklists') {
+                    const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
+                    return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
+                } else if (activeTab === 'ordenes') {
+                    const completada = i.estado === 'completado' || i.estado === 'terminado';
+                    return App.appState.filterStatus === 'approved' ? completada : !completada;
+                } else if (activeTab === 'supervisiones') {
+                    const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
+                    return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
+                }
+                return true;
             });
         }
 
