@@ -470,7 +470,7 @@ const AdminView = {
 
                     <!-- Unidad info -->
                     <div style="margin-bottom: 16px; font-size: 14px; font-weight: bold; border: 1px solid #000; padding: 8px; background-color: #f9fafb; text-transform: uppercase;">
-                        ${tipoRuta === 'Autotanque' ? 'AUTOTANQUE' : 'VEHÍCULO DE REPARTO'}
+                        ${tipoRuta === 'Autotanque' ? 'AUTOTANQUE' : tipoRuta === 'Utilitario' ? 'VEHÍCULO UTILITARIO' : 'VEHÍCULO DE REPARTO'}
                     </div>
                     
                     <!-- Datos Generales -->
