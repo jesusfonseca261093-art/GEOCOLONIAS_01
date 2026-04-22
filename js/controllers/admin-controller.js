@@ -746,14 +746,13 @@ const AdminController = {
         `; 
     },
 
-    // Exportar CSV
-    async exportToCSV() {
+    async getFilteredDataForExport() {
         let data = App.appState.step === 'taller-panel' ? await StorageService.loadOrdenes() :
                    App.appState.activeTab === 'checklists' ? await StorageService.loadReports() :
                    App.appState.activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
                    JSON.parse(localStorage.getItem('supervisiones')||'[]');
         
-        if (!data.length) return alert('Sin datos');
+        if (!data.length) return [];
         
         let filtered = data;
         if (App.appState.filterSearch) {
@@ -785,9 +784,25 @@ const AdminController = {
                 return true;
             });
         }
+
+        return filtered;
+    },
+
+    getCSVForExport(filtered) {
+        return App.appState.activeTab === 'supervisiones' ? this.exportToCSVFormat(filtered, 'supervisiones') : 
+               StorageService.exportToCSV(filtered, App.appState.activeTab === 'checklists' ? 'checklists' : 'ordenes');
+    },
+    
+    // Exportar CSV
+    async exportToCSV() {
+        if (App.appState.step !== 'taller-panel' && App.appState.activeTab === 'mapas') {
+            return alert('Esta función no aplica para el mapa.');
+        }
+
+        const filtered = await this.getFilteredDataForExport();
+        if (!filtered.length) return alert('Sin datos');
         
-        const csv = App.appState.activeTab === 'supervisiones' ? this.exportToCSVFormat(filtered, 'supervisiones') : 
-                    StorageService.exportToCSV(filtered, App.appState.activeTab === 'checklists' ? 'checklists' : 'ordenes');
+        const csv = this.getCSVForExport(filtered);
         
         const url = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv'}));
         const a = document.createElement('a'); 
@@ -796,6 +811,25 @@ const AdminController = {
         a.click(); 
         URL.revokeObjectURL(url);
         alert(`Exportados ${filtered.length} registros`);
+    },
+
+    // Exportar Excel (formato compatible .xls)
+    async exportToExcel() {
+        if (App.appState.step !== 'taller-panel' && App.appState.activeTab === 'mapas') {
+            return alert('Esta función no aplica para el mapa.');
+        }
+
+        const filtered = await this.getFilteredDataForExport();
+        if (!filtered.length) return alert('Sin datos');
+
+        const csv = this.getCSVForExport(filtered);
+        const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'application/vnd.ms-excel;charset=utf-8;' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `export_${Date.now()}.xls`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert(`Exportados ${filtered.length} registros a Excel`);
     },
     
     exportToCSVFormat(d,t) { 
