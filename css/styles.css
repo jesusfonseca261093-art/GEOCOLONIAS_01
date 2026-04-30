@@ -118,6 +118,46 @@ body {
     color: #f59e0b;
 }
 
+/* Home: estadisticas y nota importante */
+.home-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-width: 520px;
+    margin: 20px auto 0;
+}
+
+.home-stats-grid .stat-card {
+    padding: 12px 10px;
+    border-radius: 12px;
+}
+
+.home-stats-grid .stat-label {
+    font-size: 11px;
+    line-height: 1.25;
+}
+
+.home-stat-date {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 4px;
+    line-height: 1.35;
+}
+
+.home-note-card {
+    max-width: 520px;
+    margin: 18px auto 0;
+    padding: 14px 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.home-note-text {
+    font-size: 11.5px;
+    color: #64748b;
+    line-height: 1.35;
+}
+
 /* Panel admin */
 .report-card {
     background: white;
@@ -173,6 +213,39 @@ body {
     .header {
         flex-wrap: nowrap;
         gap: 8px;
+    }
+
+    .home-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .home-stats-grid .stat-card {
+        padding: 12px 10px;
+        border-radius: 12px;
+    }
+
+    .home-stats-grid .stat-label {
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .home-note-card {
+        margin-top: 18px;
+        padding: 14px 12px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .home-note-text {
+        font-size: 11px;
+        line-height: 1.35;
+    }
+
+    .home-stat-date {
+        font-size: 9px;
+        line-height: 1.2;
+        word-break: break-word;
     }
 }
 
@@ -284,7 +357,9 @@ button, a, .card, input, select, textarea {
 .sidebar-menu {
     position: fixed;
     top: 0; left: -320px;
-    width: 280px; height: 100%;
+    width: 280px;
+    max-width: calc(100vw - 24px);
+    height: 100%;
     background: #ffffff;
     z-index: 9999;
     box-shadow: 4px 0 25px rgba(0,0,0,0.15);
@@ -306,3 +381,4 @@ button, a, .card, input, select, textarea {
 .sidebar-content a:hover {
     background: #f8fafc; color: #1e40af; transform: translateX(4px);
 }
+

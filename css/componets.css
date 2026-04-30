@@ -1085,3 +1085,47 @@ input[type="date"], input[type="month"], input[type="time"] {
     .formato-label {
         font-size: 6px;
     }}
+
+/* ==========================================================
+   HOME MENU: mantener 2 bloques responsivos
+   ========================================================== */
+.home-menu-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 auto 30px;
+    width: min(100%, 760px);
+}
+
+.home-menu-grid .btn {
+    height: 100%;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .home-menu-grid {
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-menu-grid .btn {
+        font-size: 13px;
+        padding: 12px 10px;
+    }
+}
+
+/* Solo celular: menu principal mas compacto sin tocar desktop */
+@media (max-width: 767px) {
+    .home-menu-grid {
+        grid-template-columns: 1fr;
+        width: 100%;
+        max-width: 520px;
+        gap: 12px;
+    }
+
+    .home-menu-grid .btn {
+        font-size: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+    }
+}

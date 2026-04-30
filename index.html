@@ -6,21 +6,32 @@
     <title>Gen Checklist - Control de Unidades</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/componets.css">
-    
+    <link rel="stylesheet" href="css/acta-hechos.css">
+
     <!-- Leaflet CSS para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <!-- Leaflet Omnivore para leer archivos KML -->
-    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
-    
+    <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
+
     <!-- Iconos modernos (Boxicons) -->
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+
+    <!-- Tailwind utilities para modulo Acta de Hechos -->
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            corePlugins: { preflight: false, container: false },
+            important: '#acta-hechos-root'
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- Fuentes modernas (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         body, input, button, textarea, select {
             font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
@@ -28,23 +39,24 @@
     </style>
 </head>
 <body>
-    <!-- Menú Lateral Global (Sidebar) -->
+    <!-- Menu Lateral Global (Sidebar) -->
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleMenu()"></div>
     <div id="sidebarMenu" class="sidebar-menu">
         <div class="sidebar-header" style="background: #1e40af; color: white;">
             <img id="sidebarLogoImg" src="img/Logo.png" alt="Logo" style="height: 35px; object-fit: contain;">
-            <button onclick="toggleMenu()" class="btn-icon" style="color: white;"><i class='bx bx-x'></i></button>
+            <button onclick="toggleMenu()" class="btn-icon" style="color: white;"><i class="bx bx-x"></i></button>
         </div>
         <div class="sidebar-content">
-            <a onclick="navigateFromMenu('home')"><i class='bx bx-home-alt'></i> Inicio</a>
-            <a onclick="navigateFromMenu('form')"><i class='bx bx-list-check'></i> Nuevo Check List</a>
-            <a onclick="navigateFromMenu('orden-servicio')"><i class='bx bx-wrench'></i> Orden de Servicio</a>
-            <a onclick="navigateFromMenu('admin-panel')"><i class='bx bx-shield-quarter'></i> Panel Supervisor</a>
-            <a onclick="navigateFromMenu('taller-panel')"><i class='bx bx-car'></i> Panel Taller</a>
-            <a onclick="navigateFromMenu('geocercas')"><i class='bx bx-map-alt'></i> Geocercas</a>
-            <a onclick="navigateFromMenu('supervision-form')"><i class='bx bx-user-pin'></i> Supervisión en Campo</a>
+            <a onclick="navigateFromMenu('home')"><i class="bx bx-home-alt"></i> Inicio</a>
+            <a onclick="navigateFromMenu('form')"><i class="bx bx-list-check"></i> Nuevo Check List</a>
+            <a onclick="navigateFromMenu('orden-servicio')"><i class="bx bx-wrench"></i> Orden de Servicio</a>
+            <a onclick="navigateFromMenu('admin-panel')"><i class="bx bx-shield-quarter"></i> Panel Supervisor</a>
+            <a onclick="navigateFromMenu('taller-panel')"><i class="bx bx-car"></i> Panel Taller</a>
+            <a onclick="navigateFromMenu('geocercas')"><i class="bx bx-map-alt"></i> Geocercas</a>
+            <a onclick="navigateFromMenu('supervision-form')"><i class="bx bx-user-pin"></i> Supervision en Campo</a>
+            <a onclick="navigateFromMenu('acta-hechos')"><i class="bx bx-file"></i> Acta de Hechos</a>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
-            <a onclick="AuthController.logout(); toggleMenu()" style="color: #dc2626;"><i class='bx bx-log-out'></i> Cerrar Sesión</a>
+            <a onclick="AuthController.logout(); toggleMenu()" style="color: #dc2626;"><i class="bx bx-log-out"></i> Cerrar Sesion</a>
         </div>
     </div>
 
@@ -61,19 +73,19 @@
 
     <div id="app"></div>
 
-    <!-- Librería para generar PDF -->
+    <!-- Libreria para generar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- Librería EmailJS -->
+    <!-- Libreria EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-    <!-- Librería Supabase -->
+    <!-- Libreria Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Librería Chart.js para gráficas -->
+    <!--Libreria Chart.js para graficas-->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Leaflet JS para el mapa (AGREGADO AQUÍ) -->
+    <!-- Leaflet JS para el mapa -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- 1. Modelos y Datos -->
@@ -85,7 +97,7 @@
     <script src="js/controllers/signature-controller.js"></script>
     <script src="js/controllers/auth-controller.js"></script>
 
-    <!-- 3. Controladores de Lógica -->
+    <!-- 3. Controladores de Logica -->
     <script src="js/controllers/form-controller.js"></script>
     <script src="js/controllers/orden-controller.js"></script>
     <script src="js/controllers/admin-controller.js"></script>
@@ -102,10 +114,10 @@
     <script src="js/views/success.js"></script>
     <script src="js/views/geocercas.js"></script>
     <script src="js/views/supervision.js"></script>
-    <script src="js/views/mapa-quejas.js"></script>  
+    <script src="js/views/mapa-quejas.js"></script>
+    <script src="js/views/acta-hechos.js"></script>
 
-    <!-- 5. Aplicación Principal -->
+    <!-- 5. Aplicacion Principal -->
     <script src="js/app.js"></script>
-    
 </body>
 </html>

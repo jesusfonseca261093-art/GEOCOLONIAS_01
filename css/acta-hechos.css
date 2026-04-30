@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Tinos:wght@400;700&display=swap');
+
+.acta-hechos-view {
+    min-height: 100%;
+    background-color: #f3f4f6;
+    font-family: 'Tinos', serif;
+}
+
+.acta-hechos-view canvas {
+    border: 2px solid #3b82f6;
+    background: #ffffff;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.acta-hechos-view .acta-signature-container,
+.acta-docs .acta-signature-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 260px;
+    max-width: 100%;
+}
+
+.acta-docs {
+    width: 100%;
+    margin: 0 auto 20px;
+    padding: 0 8px 20px;
+    box-sizing: border-box;
+}
+
+.acta-docs .print-page {
+    background: white;
+    width: 216mm;
+    min-height: 279mm;
+    margin: 20px auto;
+    padding: 2cm 2.5cm;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    color: black;
+    line-height: 1.15;
+    overflow: hidden;
+}
+
+.acta-docs .print-page > * {
+    position: relative;
+    z-index: 1;
+}
+
+.acta-docs .print-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.acta-docs .print-header img {
+    width: 120px;
+    max-width: 32%;
+    height: auto;
+    object-fit: contain;
+}
+
+.acta-docs .page-watermark {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 78%;
+    height: auto;
+    opacity: 0.09;
+    z-index: 0 !important;
+    pointer-events: none;
+}
+
+.acta-docs .signature-img {
+    max-height: 64px;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    z-index: 10;
+}
+
+.acta-docs .signature-slot {
+    width: 100%;
+    height: 66px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 2px;
+}
+
+.acta-docs .line-black {
+    border-top: 1px solid black;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.acta-docs .text-justificado {
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+.acta-docs #print-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.acta-docs .evidence-card {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    break-inside: avoid;
+}
+
+.acta-docs .evidence-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.acta-docs .evidence-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    image-orientation: from-image;
+    display: block;
+}
+
+.acta-docs .evidence-label {
+    margin-top: 4px;
+    font-size: 7pt;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.acta-docs .annex-page .print-header {
+    margin-bottom: 4px;
+}
+
+.acta-docs .annex-page .print-header img {
+    width: 105px;
+    max-width: 28%;
+}
+
+.acta-docs .annex-page .annex-title {
+    margin-bottom: 10px !important;
+}
+
+.acta-docs .annex-page .annex-location {
+    margin-bottom: 8px !important;
+    padding: 8px 10px !important;
+}
+
+.acta-docs .annex-page #print-photos-grid {
+    gap: 8px;
+}
+
+.acta-docs .annex-page .evidence-card {
+    padding: 4px;
+}
+
+.acta-docs .annex-page .evidence-media {
+    aspect-ratio: 16 / 10;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        margin: 0;
+        padding: 0;
+    }
+
+    .acta-docs .print-page {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 1.2cm 1.8cm !important;
+        width: 216mm;
+        height: 279mm;
+        page-break-after: always;
+    }
+
+    .acta-docs .page-break {
+        page-break-before: always;
+    }
+
+    .acta-docs .print-page .page-watermark {
+        display: block;
+    }
+
+    .acta-docs .annex-page {
+        padding-top: 0.75cm !important;
+    }
+
+    .acta-docs .annex-page .evidence-label {
+        margin-top: 2px;
+        font-size: 6pt;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .acta-docs .print-page {
+        width: 100%;
+        min-height: auto;
+        height: auto;
+        margin: 12px auto;
+        padding: 16px 14px;
+    }
+
+    .acta-docs .print-header img {
+        width: 96px;
+        max-width: 40%;
+    }
+
+    .acta-docs .acta-signature-container {
+        width: 100%;
+    }
+
+    .acta-docs #print-photos-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (min-width: 769px) {
+    .acta-docs {
+        max-width: 980px;
+        padding: 0 16px 24px;
+    }
+}

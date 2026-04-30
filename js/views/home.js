@@ -16,7 +16,7 @@ const HomeView = {
 
                 <div class="container" style="margin-top: 15px;">
                     <div style="text-align: center; padding: 20px;">
-                    <h1 style="font-size: 32px; color: #1e293b; margin-bottom: 8px;">
+                    <h1 style="font-size: 32px; font-weight: 800; color: #1e293b; margin-bottom: 8px;">
                         Gen <span style="color: #dc2626;">Checklist</span>
                     </h1>
                     <p style="color: #64748b; font-size: 12px; margin-bottom: 30px;">
@@ -48,27 +48,33 @@ const HomeView = {
                             <i class='bx bx-user-pin' style="font-size: 22px;"></i> SUPERVISIÓN EN CAMPO
                         </button>       
 
+                        <button onclick="App.goToStep('acta-hechos')" class="btn" style="background: linear-gradient(135deg, #f70d0d 0%, #ff0505 100%); color: white;">
+                            <i class='bx bx-file' style="font-size: 22px;"></i> ACTA DE HECHOS
+                        </button>
+
+
                         <button onclick="AuthController.logout()" class="btn btn-secondary">
                             <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar Sesión
                         </button>
 
+                    
                     </div>
                     
-                    <div class="stats-grid">
+                    <div class="stats-grid home-stats-grid">
                         <div class="stat-card">
                             <div class="stat-value stat-checklist" id="stat-checklist">--</div>
                             <div class="stat-label">Check list de Hoy</div>
-                            <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;" id="todayDate"></div>
+                            <div class="home-stat-date" id="todayDate"></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value stat-ordenes" id="stat-ordenes">--</div>
                             <div class="stat-label">Órdenes de Hoy</div>
-                            <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;" id="todayDate2"></div>
+                            <div class="home-stat-date" id="todayDate2"></div>
                         </div>
                     </div>
                     
-                    <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 12px;">
-                        <p style="font-size: 12px; color: #64748b;">
+                    <div class="home-note-card">
+                        <p class="home-note-text">
                             <strong>Nota importante:</strong> Este es un reporte de revisión diaria, por lo que no sustituye al reporte de fallas a taller. Para reportes de fallas, utiliza "Orden de Servicio".
                         </p>
                     </div>
