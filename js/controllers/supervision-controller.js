@@ -357,21 +357,20 @@ const SupervisionController = {
         
         setTimeout(async () => {
             try {
-                const supervisionesGuardadas = JSON.parse(localStorage.getItem('supervisiones') || '[]');
-                supervisionesGuardadas.push(reporte);
-                localStorage.setItem('supervisiones', JSON.stringify(supervisionesGuardadas));
+                const saved = await StorageService.saveSupervision(reporte);
+                if (!saved) throw new Error("Error al guardar en base de datos");
                 
                 // Disparar eventos para actualizar el mapa
                 window.dispatchEvent(new Event('supervisionGuardada'));
-                window.dispatchEvent(new StorageEvent('storage', {
-                    key: 'supervisiones',
-                    newValue: JSON.stringify(supervisionesGuardadas)
-                }));
                 
                 if (!appState.supervisiones) {
                     appState.supervisiones = [];
                 }
                 appState.supervisiones.push(reporte);
+                appState.ultimaSupervision = reporte;
+
+                // ⏳ Obligar a la app a esperar a que salgan TODOS los WhatsApps antes de avanzar
+                await this.notificarPorWhatsapp(reporte);
                 
                 // Resetear formulario
                 appState.supervisionData = {
@@ -412,6 +411,69 @@ const SupervisionController = {
                 App.render();
             }
         }, 1500);
+    },
+
+    async notificarPorWhatsapp(reporte) {
+
+        const directorioSupervisores = {
+            "ROBERTO": { phone: "521"},
+            "OSWALDO": { phone: "5214426162604", apikey: "7228729"},
+            "PRUEBA": { phone: "5214426162604", apikey: "7228729"} // Para que las pruebas te lleguen a ti
+        };
+
+        const destinatarios = [ 
+            { nombre: "Administrador", phone: "5214426162604", apikey: "7228729" },
+            { nombre: "Supervisor de supervisores", phone: "5214423957846", apikey: "3148786"}
+        ];
+
+        const supActual = Object.keys(directorioSupervisores).find(k =>
+        (reporte.nombreSupervisor || '').toUpperCase().includes(k)
+        );
+        if (supActual) destinatarios.push(directorioSupervisores[supActual]);
+
+        // 🛡️ Filtro para evitar mensajes duplicados (Si eres admin y supervisor al mismo tiempo)
+        const destinatariosUnicos = [];
+        const telefonosVistos = new Set();
+        destinatarios.forEach(contacto => {
+            if (contacto.phone && contacto.apikey && !telefonosVistos.has(contacto.phone)) {
+                telefonosVistos.add(contacto.phone);
+                destinatariosUnicos.push(contacto);
+            }
+        });
+
+        // 📍 Garantizar que se mande la ubicación GPS real, no la que escribieron
+        let ubicacionGPS = "";
+        if (reporte.coordenadas && reporte.coordenadas.lat && reporte.coordenadas.lng) {
+            ubicacionGPS = `📍 *Ubicación Exacta  (GPS):*\nhttps://www.google.com/maps?q=${reporte.coordenadas.lat},${reporte.coordenadas.lng}`;
+        } else {
+            ubicacionGPS = `⚠️ *ALERTA:* El supervisor bloqueó o apagó el GPS del celular.\n📍 *Dirección escrita a mano (NO VERIFICADA):* ${reporte.ubicacion || 'No ingresada'}`;
+        }
+
+        const mensaje = `🚨 *SUPERVISIÓN COMPLETADA* 🚨\n\n` +
+                        `👨‍🔧 *Supervisor:* ${reporte.nombreSupervisor}\n` +
+                        `👤 *Cliente:* ${reporte.nombreCliente}\n` +
+                        `📦 *Pedido:* ${reporte.numeroPedido}\n` +
+                        `🔴 *Queja:* ${reporte.motivoQueja}\n` +
+                        `✅ *Solución:* ${reporte.solucion}\n` +
+                        `📅 *Fecha/Hora:* ${reporte.fecha} ${reporte.hora}\n\n` +
+                        `${ubicacionGPS}`;
+        const encodedMessage = encodeURIComponent(mensaje);
+
+        // ⏱️ Enviar mensajes uno por uno con pausa para evitar filtro Anti-Spam
+        for (const contacto of destinatariosUnicos) {
+            if (contacto.phone && contacto.apikey) {
+                const url = `https://api.callmebot.com/whatsapp.php?phone=${contacto.phone}&text=${encodedMessage}&apikey=${contacto.apikey}`;
+                
+                try {
+                    // Await explícito para asegurar que la petición salga completamente del teléfono
+                    await fetch(url, { mode: 'no-cors', method: 'GET' });
+                    console.log("WhatsApp procesado para: " + contacto.phone);
+                } catch (e) {}
+                
+                // ⏱️ Esperar 4 segundos (CallMeBot es estricto con el spam)
+                await new Promise(resolve => setTimeout(resolve, 4000));
+            }
+        }
     }
 };
 

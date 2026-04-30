@@ -5,8 +5,8 @@ const AuthController = {
     async handleLogin(event) {
         event.preventDefault();
         
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
         const btn = document.getElementById('loginBtn');
         
         btn.innerText = 'Verificando...';
@@ -33,6 +33,7 @@ const AuthController = {
             else if (userEmail.startsWith('cilindros')) role = 'cilindros';
             else if (userEmail.startsWith('autotanque')) role = 'autotanque';
             else if (userEmail.startsWith('estaciones')) role = 'estaciones';
+            else if (!role) role = 'supervisor';
             
             const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor'];
             if (!validRoles.includes(role)) {
@@ -43,8 +44,6 @@ const AuthController = {
             // 3. Guardarlo en el estado de la app
             App.appState.userRole = role;
             App.appState.user = data.user;
-            
-            alert(`✅ Bienvenido. Nivel de acceso: ${role.toUpperCase()}`);
             
             // 4. Redirigir al menú principal (que ahora es exclusivo para logueados)
             App.goToStep('home');
@@ -73,6 +72,7 @@ const AuthController = {
                 else if (userEmail.startsWith('cilindros')) role = 'cilindros';
                 else if (userEmail.startsWith('autotanque')) role = 'autotanque';
                 else if (userEmail.startsWith('estaciones')) role = 'estaciones';
+                else if (!role) role = 'supervisor';
                 
                 const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor'];
                 if (validRoles.includes(role)) {

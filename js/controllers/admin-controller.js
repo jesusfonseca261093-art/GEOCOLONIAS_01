@@ -4,24 +4,14 @@ const AdminController = {
     chartInstance: null,
     SECRET_CLEAN_CODE: "Nieto2025",
 
-    // Verificar contraseñas
-    checkPassword() {
-        const pwd = document.getElementById('adminPassword')?.value;
-        if (['nieto2025','super7','admin'].includes(pwd)) {
-            App.appState.userRole = 'supervisor';
-            App.goToStep('admin-panel');
-        } else if (['nieto2025','mecanico'].includes(pwd)) {
-            App.appState.userRole = 'taller';
-            App.goToStep('taller-panel');
-        } else alert("Clave incorrecta.");
-    },
-    
-    checkTallerPassword() {
-        const pwd = document.getElementById('tallerPassword')?.value;
-        if (['nieto2025','mecanico','taller2025'].includes(pwd)) {
-            App.appState.userRole = 'taller';
-            App.goToStep('taller-panel');
-        } else alert("❌ Clave incorrecta.");
+    // Identificar si es un registro de prueba (para no contarlo ni exportarlo)
+    isTestRecord(item) {
+        if (!item) return false;
+        const op = String(item.operador || '').toLowerCase();
+        const sup = String(item.nombreSupervisor || '').toLowerCase();
+        const cli = String(item.nombreCliente || '').toLowerCase();
+        const uni = String(item.unidad || item.ecoUnidad || '').toLowerCase();
+        return op.includes('prueba') || sup.includes('prueba') || cli.includes('prueba') || uni.includes('prueba');
     },
 
     // Cambiar pestaña
@@ -159,7 +149,7 @@ const AdminController = {
         try {
             let items = App.appState.activeTab === 'checklists' ? await StorageService.loadReports() :
                         App.appState.activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
-                        JSON.parse(localStorage.getItem('supervisiones') || '[]');
+                        await StorageService.loadSupervisiones();
                         
             // ---- NUEVA LÓGICA: CÁLCULO ESTÁTICO DE MES Y HOY ----
             const hoy = new Date();
@@ -172,6 +162,9 @@ const AdminController = {
             
             // Recorrer todos los elementos puros de la base de datos para dividirlos por fecha
             items.forEach(i => {
+                // Excluir registros de prueba de los contadores KPI
+                if (this.isTestRecord(i)) return;
+
                 let y, m, d;
                 if (i.timestamp) {
                     const date = new Date(i.timestamp);
@@ -227,7 +220,7 @@ const AdminController = {
                     itemYear = fecha.getFullYear();
                     itemMonth = fecha.getMonth() + 1;
                     itemDay = fecha.getDate();
-                } else if (i.fecha) {
+                } else if (typeof i.fecha === 'string') {
                     if (i.fecha.includes('/')) {
                         const [dia, mes, año] = i.fecha.split('/').map(Number);
                         itemYear = año; itemMonth = mes; itemDay = dia;
@@ -299,9 +292,31 @@ const AdminController = {
             }
             
             if (t) t.textContent = finalFiltered.length;
-            if (c) c.innerHTML = AdminView.renderReportsList(finalFiltered, App.appState.activeTab);
+            // Excluir los de prueba del conteo total que se muestra arriba de la lista
+            if (t) t.textContent = finalFiltered.filter(i => !this.isTestRecord(i)).length;
+            if (c) {
+                c.innerHTML = AdminView.renderReportsList(finalFiltered, App.appState.activeTab);
+                
+                // 🎨 Post-procesamiento para pintar de morado las tarjetas de prueba en las listas
+                setTimeout(() => {
+                    const cards = c.querySelectorAll('.card, .report-card');
+                    cards.forEach(card => {
+                        if (card.innerText.toLowerCase().includes('prueba')) {
+                            card.style.backgroundColor = '#faf5ff';
+                            card.style.border = '2px solid #d8b4fe';
+                            if (!card.querySelector('.test-banner')) {
+                                const banner = document.createElement('div');
+                                banner.className = 'test-banner';
+                                banner.style.cssText = 'background:#a855f7; color:white; text-align:center; font-size:13px; font-weight:bold; padding:8px; border-radius:6px; margin-bottom:15px;';
+                                banner.innerText = '🧪 REGISTRO DE PRUEBA (HACER CASO OMISO)';
+                                card.insertBefore(banner, card.firstChild);
+                            }
+                        }
+                    });
+                }, 100);
+            }
             
-            try { this.updateStatsChart(filtered, App.appState.activeTab); } catch (e) {}
+            try { this.updateStatsChart(filtered.filter(i => !this.isTestRecord(i)), App.appState.activeTab); } catch (e) {}
         } catch (error) {
             console.error("Error cargando reportes:", error);
             if (c) c.innerHTML = `<div class="card"><p>Error: ${error.message}</p><button onclick="AdminController.loadReportsIntoPanel()" class="btn btn-primary">Reintentar</button></div>`;
@@ -326,6 +341,9 @@ const AdminController = {
             let itemsHoy = [];
             
             allItems.forEach(i => {
+                // Excluir registros de prueba de los contadores KPI
+                if (this.isTestRecord(i)) return;
+
                 let y, m, d;
                 if (i.timestamp) {
                     const date = new Date(i.timestamp);
@@ -373,7 +391,7 @@ const AdminController = {
                 if (i.timestamp) {
                     const fecha = new Date(i.timestamp);
                     itemYear = fecha.getFullYear(); itemMonth = fecha.getMonth() + 1; itemDay = fecha.getDate();
-                } else if (i.fecha) {
+                } else if (typeof i.fecha === 'string') {
                     if (i.fecha.includes('/')) {
                         const [dia, mes, año] = i.fecha.split('/').map(Number);
                         itemYear = año; itemMonth = mes; itemDay = dia;
@@ -429,10 +447,18 @@ const AdminController = {
         if (!ordenes.length) return `<div class="card" style="text-align:center;padding:40px;"><div style="font-size:40px;">🔧</div><p>No hay órdenes</p></div>`;
         
         return ordenes.map(o => {
-            const color = o.estado === 'pendiente' ? '#dc2626' : o.estado === 'en_proceso' ? '#2563eb' : '#16a34a';
-            const bg = o.estado === 'pendiente' ? '#fee2e2' : o.estado === 'en_proceso' ? '#dbeafe' : '#dcfce7';
+            const isTest = AdminController.isTestRecord(o);
+            const baseColor = o.estado === 'pendiente' ? '#dc2626' : o.estado === 'en_proceso' ? '#2563eb' : '#16a34a';
+            const baseBg = o.estado === 'pendiente' ? '#fee2e2' : o.estado === 'en_proceso' ? '#dbeafe' : '#dcfce7';
             
-            return `<div class="report-card" style="border-left:4px solid ${color};margin-bottom:15px;">
+            const color = isTest ? '#a855f7' : baseColor;
+            const bg = isTest ? '#f3e8ff' : baseBg;
+            
+            return `<div class="report-card" style="border-left:4px solid ${color};margin-bottom:15px; ${isTest ? 'background-color: #faf5ff; border: 2px solid #d8b4fe; border-left: 6px solid #a855f7; border-radius: 8px;' : ''}">
+                ${isTest ? `
+                <div style="background:#a855f7; color:white; text-align:center; font-size:13px; font-weight:bold; padding:8px; border-radius:6px; margin-bottom:15px;">
+                    🧪 REGISTRO DE PRUEBA (HACER CASO OMISO)
+                </div>` : ''}
                 <div class="report-header">
                     <div>
                         <div class="report-date">${o.fecha || ''} ${o.hora || ''}</div>
@@ -464,8 +490,8 @@ const AdminController = {
                 </div>
                 
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-                    <span style="background:${bg};color:${color};padding:4px 8px;border-radius:12px;font-size:12px;">
-                        ${o.estado === 'pendiente' ? '⏳ PENDIENTE' : o.estado === 'en_proceso' ? '🔄 EN PROCESO' : '✅ COMPLETADO'}
+                    <span style="background:${bg};color:${color};padding:4px 8px;border-radius:12px;font-size:12px;font-weight:bold;">
+                        ${isTest ? '🧪 PRUEBA - ' : ''}${o.estado === 'pendiente' ? '⏳ PENDIENTE' : o.estado === 'en_proceso' ? '🔄 EN PROCESO' : '✅ COMPLETADO'}
                     </span>
                     
                     <div style="display:flex;gap:5px;">
@@ -574,8 +600,8 @@ const AdminController = {
             ordenes[ordenIndex].estado = status;
             localStorage.setItem('ordenes', JSON.stringify(ordenes));
             
-            if (typeof StorageService.updateOrdenStatus === 'function') {
-                await StorageService.updateOrdenStatus(id, status);
+            if (typeof StorageService.updateOrden === 'function') {
+                await StorageService.updateOrden(id, { estado: status });
             }
             
             await this.loadTallerPanel();
@@ -590,21 +616,100 @@ const AdminController = {
     },
 
     // Ver detalles
-    async viewReport(id) { 
+    async viewReport(id) {
         const r = (await StorageService.loadReports()).find(r=>r.id==id);
-        if (r) ModalService.show(AdminView.renderReportDetails(r)); 
-        else alert("No encontrado");
+        if (r) {
+            ModalService.show(AdminView.renderReportDetails(r)); 
+            if (this.isTestRecord(r)) this.highlightModalAsTest(id, 'checklists');
+        } else alert("No encontrado");
     },
     
-    async viewOrden(id) { 
+    async viewOrden(id) {
         const o = (await StorageService.loadOrdenes()).find(o=>o.id==id);
-        if (o) ModalService.show(AdminView.renderOrdenDetails(o)); 
-        else alert("No encontrado");
+        if (o) {
+            ModalService.show(AdminView.renderOrdenDetails(o)); 
+            if (this.isTestRecord(o)) this.highlightModalAsTest(id, 'ordenes');
+        } else alert("No encontrado");
     },
     
+    // Función para pintar de morado las ventanas modales al darle "Ver"
+    highlightModalAsTest(id, type) {
+        setTimeout(() => {
+            if (ModalService.currentModal) {
+                const container = ModalService.currentModal.firstElementChild;
+                if (container) {
+                    container.style.backgroundColor = '#faf5ff';
+                    container.style.border = '3px solid #a855f7';
+                    
+                    if (!container.querySelector('.test-banner-modal')) {
+                        const banner = document.createElement('div');
+                        banner.className = 'test-banner-modal';
+                        banner.style.cssText = 'background:#a855f7; color:white; text-align:center; font-size:15px; font-weight:bold; padding:12px; border-radius:8px; margin: 15px;';
+                        banner.innerText = '🧪 REGISTRO DE PRUEBA (HACER CASO OMISO)';
+                        container.insertBefore(banner, container.firstChild);
+                    }
+
+                    // Inyectar botón de eliminar al final
+                    if (id && type && !container.querySelector('.btn-delete-test')) {
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'btn-delete-test';
+                        delBtn.style.cssText = 'padding: 12px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;';
+                        delBtn.innerHTML = '🗑️ Eliminar Prueba';
+                        delBtn.onclick = () => AdminController.deleteTestRecord(id, type);
+                        
+                        const actionContainers = Array.from(container.querySelectorAll('div')).filter(d => 
+                            d.hasAttribute('data-html2canvas-ignore') || (d.style.display === 'flex' && d.style.gap)
+                        );
+                        
+                        if (actionContainers.length > 0) {
+                            const lastContainer = actionContainers[actionContainers.length - 1];
+                            lastContainer.appendChild(delBtn);
+                        } else {
+                            delBtn.style.width = 'calc(100% - 30px)';
+                            delBtn.style.margin = '0 15px 15px 15px';
+                            container.appendChild(delBtn);
+                        }
+                    }
+                }
+            }
+        }, 50);
+    },
+    
+    // Borrar registro de prueba en la BD
+    async deleteTestRecord(id, tab) {
+        if (!confirm("🚨 ¿Estás seguro de eliminar PERMANENTEMENTE este registro de prueba?\nEsta acción no se puede deshacer.")) return;
+        
+        ModalService.close();
+        const loadingMsg = document.createElement('div');
+        loadingMsg.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:10000;text-align:center;font-weight:bold;">Borrando...</div>';
+        document.body.appendChild(loadingMsg);
+        
+        try {
+            let success = false;
+            if (tab === 'checklists') success = await StorageService.deleteReport(id);
+            else if (tab === 'ordenes') success = await StorageService.deleteOrden(id);
+            else if (tab === 'supervisiones') success = await StorageService.deleteSupervision(id);
+            
+            if (success) {
+                setTimeout(() => {
+                    document.body.removeChild(loadingMsg);
+                    if (App.appState.step === 'taller-panel') AdminController.loadTallerPanel();
+                    else AdminController.loadReportsIntoPanel();
+                }, 500);
+            } else {
+                document.body.removeChild(loadingMsg);
+                alert("❌ No se pudo eliminar el registro en la base de datos.");
+            }
+        } catch(e) {
+            console.error(e);
+            if (document.body.contains(loadingMsg)) document.body.removeChild(loadingMsg);
+            alert("❌ Error de conexión al intentar eliminar.");
+        }
+    },
+
     // Ver supervisiones
     async viewSupervision(id) { 
-        const supervisiones = JSON.parse(localStorage.getItem('supervisiones')||'[]');
+        const supervisiones = await StorageService.loadSupervisiones();
         const s = supervisiones.find(s => s.id == id);
         if (s) {
             ModalService.show(this.renderSupervisionDetails(s)); 
@@ -614,11 +719,18 @@ const AdminController = {
     },
 
     // Renderizar detalles de supervisión
-    renderSupervisionDetails(s) { 
+    renderSupervisionDetails(s) {
+        const isTest = this.isTestRecord(s);
+        const contentId = `supervision-content-${s.id || Date.now()}`;
         return `
-            <div style="padding: 25px; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+            <div id="${contentId}" style="padding: 25px; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: ${isTest ? '#faf5ff' : 'white'}; ${isTest ? 'border: 2px solid #d8b4fe; border-radius: 12px;' : ''}">
+                ${isTest ? `
+                <div style="background: #a855f7; color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    🧪 REGISTRO DE PRUEBA - HACER CASO OMISO
+                </div>
+                ` : ''}
                 <!-- Encabezado con nombre del supervisor -->
-                <div style="background: #0867ec; color: white; padding: 20px; border-radius: 12px 12px 0 0; margin-bottom: 20px;">
+                <div style="background: ${isTest ? '#9333ea' : '#0867ec'}; color: white; padding: 20px; border-radius: 12px 12px 0 0; margin-bottom: 20px;">
                     <h2 style="margin: 0; font-size: 24px; font-weight: bold;">${s.nombreSupervisor || 'ALBERTO SORIA'}</h2>
                 </div>
                 
@@ -736,234 +848,311 @@ const AdminController = {
                 </div>
                 
                 <!-- Botones de acción -->
-                <div style="display: flex; gap: 10px; margin-top: 30px; padding: 0 10px 20px 10px;">
+                <div style="display: flex; gap: 10px; margin-top: 30px; padding: 0 10px 20px 10px;" data-html2canvas-ignore>
                     <button onclick="ModalService.close()"
                             style="flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Cerrar
                     </button>
+                    <button onclick="AdminController.downloadPDF('${contentId}', 'Supervision_${(s.nombreSupervisor || '').split(' ')[0]}_${(s.fecha || '').replace(/\//g, '-')}')"
+                            style="flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        📄 Descargar PDF
+                    </button>
+                    ${isTest ? `
+                    <button onclick="AdminController.deleteTestRecord('${s.id}', 'supervisiones')"
+                            style="flex: 1; padding: 12px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        🗑️ Eliminar Prueba
+                    </button>
+                    ` : ''}
                 </div>
             </div>
         `; 
     },
 
-    // Exportar CSV
-    async exportToCSV() {
-        let data = App.appState.step === 'taller-panel' ? await StorageService.loadOrdenes() :
-                   App.appState.activeTab === 'checklists' ? await StorageService.loadReports() :
-                   App.appState.activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
-                   JSON.parse(localStorage.getItem('supervisiones')||'[]');
-        
-        if (!data.length) return alert('Sin datos');
-        
-        let filtered = data;
-        if (App.appState.filterSearch) {
-            const s = App.appState.filterSearch.toLowerCase();
-            filtered = filtered.filter(i => i.operador?.toLowerCase().includes(s) || 
-                                           i.unidad?.toLowerCase().includes(s) || 
-                                           i.folio?.toString().includes(s) || 
-                                           i.nombreSupervisor?.toLowerCase().includes(s));
-        }
-        
-        // Aplicar filtro de tipo de unidad si es inspecciones
-        if (App.appState.activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
-            filtered = filtered.filter(i => (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta);
-        }
-        
-        // Aplicar filtro de tarjetas clickeadas
-        if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
-            filtered = filtered.filter(i => {
-                if (App.appState.activeTab === 'checklists') {
-                    const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
-                    return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
-                } else if (App.appState.activeTab === 'ordenes') {
-                    const completada = i.estado === 'completado' || i.estado === 'terminado';
-                    return App.appState.filterStatus === 'approved' ? completada : !completada;
-                } else if (App.appState.activeTab === 'supervisiones') {
-                    const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
-                    return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
-                }
-                return true;
-            });
-        }
-        
-        const csv = App.appState.activeTab === 'supervisiones' ? this.exportToCSVFormat(filtered, 'supervisiones') : 
-                    StorageService.exportToCSV(filtered, App.appState.activeTab === 'checklists' ? 'checklists' : 'ordenes');
-        
-        const url = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv'}));
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = `export_${Date.now()}.csv`; 
-        a.click(); 
-        URL.revokeObjectURL(url);
-        alert(`Exportados ${filtered.length} registros`);
-    },
-    
-    exportToCSVFormat(d,t) { 
-        if (t === 'supervisiones') {
-            return 'Fecha,Hora,Supervisor,Pedido,Cliente,Teléfono,Motivo,Solución,Ubicación\n' + 
-                   d.map(i => `${i.fecha},${i.hora},${i.nombreSupervisor},${i.numeroPedido},${i.nombreCliente},${i.telefonoCliente},${i.motivoQueja},${i.solucion},${i.ubicacion}`).join('\n');
-        }
-        return '';
-    },
-
-    // Exportar todos los reportes filtrados a PDFs individuales (uno por uno)
-    async exportAllToPDF() {
+    // Diálogo unificado para exportar PDF / CSV
+    showExportDialog(format) {
         const isTaller = App.appState.step === 'taller-panel';
         const activeTab = isTaller ? 'ordenes' : App.appState.activeTab;
-
+        
         if (activeTab === 'mapas') return alert('Esta función no aplica para el mapa.');
 
-        // 1. Obtener los datos según la pestaña
-        let items = activeTab === 'checklists' ? await StorageService.loadReports() :
-                    activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
-                    JSON.parse(localStorage.getItem('supervisiones') || '[]');
+        const html = `
+            <div style="padding: 25px; font-family: Arial, sans-serif; text-align: left;">
+                <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">Exportar a ${format.toUpperCase()}</h3>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Selecciona qué datos deseas descargar. Esta opción ignorará los filtros de la pantalla y descargará toda la información directa de la base de datos.</p>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #334155;">
+                        <input type="radio" name="exportMode" value="all" checked onchange="document.getElementById('exportDateDiv').style.display='none'" style="width: 18px; height: 18px;">
+                        Descargar TODO el historial
+                    </label>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #334155;">
+                        <input type="radio" name="exportMode" value="date" onchange="document.getElementById('exportDateDiv').style.display='block'" style="width: 18px; height: 18px;">
+                        Descargar de un DÍA en específico
+                    </label>
+                    <div id="exportDateDiv" style="display: none; margin-top: 10px; padding-left: 28px;">
+                        <input type="date" id="exportDateInput" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; max-width: 200px; font-size: 14px; background: #f8fafc;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="ModalService.close()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+                    <button onclick="AdminController.executeExport('${format}', '${activeTab}')" class="btn btn-primary" style="flex: 1; background: ${format === 'pdf' ? '#ef4444' : '#10b981'}; border: none;">
+                        ${format === 'pdf' ? '📄 Generar PDFs' : '📊 Descargar CSV'}
+                    </button>
+                </div>
+            </div>
+        `;
+        ModalService.show(html);
+    },
+
+    // Ejecutar la exportación según la selección
+    async executeExport(format, tab) {
+        const mode = document.querySelector('input[name="exportMode"]:checked').value;
+        let selectedDate = null;
         
-        // 2. Aplicar los mismos filtros que se ven en pantalla
-        let filtered = items;
-        if (isTaller) {
-            if (App.appState.filterSearch) {
-                const s = App.appState.filterSearch.toLowerCase();
-                filtered = items.filter(i => i.unidad?.toLowerCase().includes(s) || 
-                                         i.folio?.toString().toLowerCase().includes(s) || 
-                                         i.operador?.toLowerCase().includes(s));
+        if (mode === 'date') {
+            selectedDate = document.getElementById('exportDateInput').value;
+            if (!selectedDate) return alert('Por favor, selecciona una fecha válida.');
+        }
+        
+        ModalService.close();
+        
+        const loadingDiv = document.createElement('div');
+        loadingDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px 40px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:10000;text-align:center;';
+        loadingDiv.innerHTML = '<div class="spinner" style="margin:10px auto;"></div><p style="font-weight:bold;color:#475569;">Descargando datos de la nube...</p>';
+        document.body.appendChild(loadingDiv);
+
+        try {
+            let items = tab === 'checklists' ? await StorageService.loadReports() :
+                        tab === 'ordenes' ? await StorageService.loadOrdenes() :
+                        await StorageService.loadSupervisiones();
+            
+            if (!items || items.length === 0) {
+                document.body.removeChild(loadingDiv);
+                return alert('No hay datos registrados en la base de datos.');
             }
-        } else {
-            filtered = items.filter(i => {
-                let itemYear, itemMonth, itemDay;
-                if (i.timestamp) {
-                    const fecha = new Date(i.timestamp);
-                    itemYear = fecha.getFullYear(); itemMonth = fecha.getMonth() + 1; itemDay = fecha.getDate();
-                } else if (i.fecha) {
-                    if (i.fecha.includes('/')) {
-                        const [dia, mes, año] = i.fecha.split('/').map(Number);
-                        itemYear = año; itemMonth = mes; itemDay = dia;
-                    } else if (i.fecha.includes('-')) {
-                        const [año, mes, dia] = i.fecha.split('-').map(Number);
-                        itemYear = año; itemMonth = mes; itemDay = dia;
+
+            // Filtrar reportes de prueba para que NO sean exportables
+            items = items.filter(i => !this.isTestRecord(i));
+
+            if (selectedDate) {
+                const [year, month, day] = selectedDate.split('-').map(Number);
+                items = items.filter(i => {
+                    let itemYear, itemMonth, itemDay;
+                    if (i.timestamp) {
+                        const d = new Date(i.timestamp);
+                        itemYear = d.getFullYear(); itemMonth = d.getMonth() + 1; itemDay = d.getDate();
+                    } else if (i.fecha) {
+                        if (i.fecha.includes('/')) {
+                            const parts = i.fecha.split('/').map(Number);
+                            itemDay = parts[0]; itemMonth = parts[1]; itemYear = parts[2];
+                        } else if (i.fecha.includes('-')) {
+                            const parts = i.fecha.split('-').map(Number);
+                            itemYear = parts[0]; itemMonth = parts[1]; itemDay = parts[2];
+                        }
                     }
-                }
+                    return itemYear === year && itemMonth === month && itemDay === day;
+                });
+            }
+            
+            document.body.removeChild(loadingDiv);
 
-                if (App.appState.filterMonth) {
-                    if (!itemYear || !itemMonth) return false;
-                    const [year, month] = App.appState.filterMonth.split('-').map(Number);
-                    if (itemYear !== year || itemMonth !== month) return false;
-                }
+            if (items.length === 0) return alert('No hay registros para la fecha seleccionada.');
+            
+            if (format === 'csv') {
+                this.generateCSV(items, tab);
+            } else {
+                this.generatePDFs(items, tab);
+            }
+        } catch (error) {
+            if (document.body.contains(loadingDiv)) document.body.removeChild(loadingDiv);
+            console.error(error);
+            alert("Error al extraer los datos.");
+        }
+    },
 
-                if (App.appState.filterDate) {
-                    if (!itemYear || !itemMonth || !itemDay) return false;
-                    const [year, month, day] = App.appState.filterDate.split('-').map(Number);
-                    if (itemYear !== year || itemMonth !== month || itemDay !== day) return false;
+    // Generar archivo CSV ultra-detallado idéntico al PDF
+    generateCSV(items, tab) {
+        let csv = '';
+        const escapeCSV = str => `"${(str || '').toString().replace(/"/g, '""')}"`;
+        
+        if (tab === 'checklists') {
+            let allPoints = [];
+            if (window.CONFIG) {
+                allPoints = [
+                    ...(window.CONFIG.INSPECTION_POINTS_NORMAL || []),
+                    ...(window.CONFIG.INSPECTION_POINTS_AUTOTANQUE || []),
+                    ...(window.CONFIG.INSPECTION_POINTS_UTILITARIO || [])
+                ].filter(p => !p.isHeader);
+            }
+            
+            let uniquePoints = [];
+            let seenIds = new Set();
+            allPoints.forEach(p => {
+                if (!seenIds.has(p.id)) {
+                    seenIds.add(p.id);
+                    uniquePoints.push(p);
                 }
-                return true;
-            }).filter(i => {
-                if (!App.appState.filterSearch) return true;
-                const s = App.appState.filterSearch.toLowerCase();
-                if (activeTab === 'supervisiones') {
-                    return (i.nombreSupervisor?.toLowerCase().includes(s) || i.nombreCliente?.toLowerCase().includes(s) || i.numeroPedido?.toLowerCase().includes(s) || i.telefonoCliente?.toLowerCase().includes(s) || i.motivoQueja?.toLowerCase().includes(s) || i.ubicacion?.toLowerCase().includes(s));
-                } else {
-                    return (i.operador?.toLowerCase().includes(s) || i.unidad?.toLowerCase().includes(s) || i.ecoUnidad?.toLowerCase().includes(s) || i.ruta?.toLowerCase().includes(s) || i.descripcion?.toLowerCase().includes(s) || i.descripcionFalla?.toLowerCase().includes(s) || i.folio?.toString().includes(s));
-                }
-            }).filter(i => {
-                if (activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
-                    return (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta;
-                }
-                return true;
+            });
+
+            let header = ['Identificador_Reporte', 'Fecha', 'Hora', 'Operador', 'Unidad', 'Tipo_Ruta', 'Ruta', 'KM', 'Estado_General', 'Observaciones_Fallas_Detectadas'];
+            uniquePoints.forEach(p => header.push(escapeCSV(p.label)));
+            csv = header.join(',') + '\n';
+            
+            items.forEach(report => {
+                const evaluaciones = report.evaluaciones || {};
+                const rechazados = Object.values(evaluaciones).filter(e => e === 'rechazado').length;
+                const estado = rechazados > 0 ? 'CON FALLAS' : 'APROBADO';
+                
+                let row = [
+                    escapeCSV(report.id),
+                    escapeCSV(report.fecha),
+                    escapeCSV(report.hora),
+                    escapeCSV(report.operador),
+                    escapeCSV(report.ecoUnidad),
+                    escapeCSV(report.tipoRuta || 'Utilitario'),
+                    escapeCSV(report.ruta),
+                    report.km || 0,
+                    escapeCSV(estado),
+                    escapeCSV(report.observaciones)
+                ];
+                
+                uniquePoints.forEach(p => {
+                    let val = evaluaciones[p.id];
+                    let strVal = val === 'aprobado' ? 'Cumple' : (val === 'rechazado' ? 'No Cumple' : 'N/A');
+                    row.push(escapeCSV(strVal));
+                });
+                
+                csv += row.join(',') + '\n';
+            });
+            
+        } else if (tab === 'ordenes') {
+            let header = ['Folio_Orden', 'Fecha', 'Hora_Reporte', 'Hora_Termino', 'Tiempo_Muerto', 'Unidad', 'Operador', 'Kilometraje', 'Lugar_Mantenimiento', 'Tipo_Mantenimiento', 'Estado_Proceso', 'Descripcion_Falla_Reportada', 'Trabajo_Realizado_Taller', 'Puntos_Criticos_Revisados', 'Observaciones_Adicionales'];
+            csv = header.join(',') + '\n';
+            
+            items.forEach(o => {
+                let row = [
+                    escapeCSV(o.folio),
+                    escapeCSV(o.fecha),
+                    escapeCSV(o.horaReporte),
+                    escapeCSV(o.horaTermino),
+                    escapeCSV(o.tiempoMuerto),
+                    escapeCSV(o.unidad),
+                    escapeCSV(o.operador),
+                    o.kilometro || 0,
+                    escapeCSV(o.mantenimientoLugar === 'taller' ? 'Taller' : 'Ruta'),
+                    escapeCSV(o.tipoMantenimiento),
+                    escapeCSV(o.estado),
+                    escapeCSV(o.descripcionFalla),
+                    escapeCSV(o.trabajoRealizado),
+                    escapeCSV((o.puntosCriticos || []).join('; ')),
+                    escapeCSV(o.observaciones)
+                ];
+                csv += row.join(',') + '\n';
+            });
+            
+        } else if (tab === 'supervisiones') {
+            let header = ['Fecha', 'Hora', 'Supervisor', 'Pedido', 'Cliente', 'Teléfono', 'Calle', 'Número', 'Colonia', 'Ubicación_Coordenadas_Google', 'Detalle_Visita', 'Motivo_Queja', 'Solución_Brindada', 'Comentarios_Adicionales', 'Enlace_Directo_Maps'];
+            csv = header.join(',') + '\n';
+            items.forEach(i => {
+                let row = [
+                    escapeCSV(i.fecha),
+                    escapeCSV(i.hora),
+                    escapeCSV(i.nombreSupervisor),
+                    escapeCSV(i.numeroPedido),
+                    escapeCSV(i.nombreCliente),
+                    escapeCSV(i.telefonoCliente),
+                    escapeCSV(i.calle),
+                    escapeCSV(i.numero),
+                    escapeCSV(i.colonia),
+                    escapeCSV(i.ubicacion),
+                    escapeCSV(i.detalleVisita),
+                    escapeCSV(i.motivoQueja),
+                    escapeCSV(i.solucion),
+                    escapeCSV(i.comentario),
+                    escapeCSV(i.enlaceMaps)
+                ];
+                csv += row.join(',') + '\n';
             });
         }
         
-        // Aplicar filtro de tarjetas clickeadas
-        if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
-            filtered = filtered.filter(i => {
-                if (activeTab === 'checklists') {
-                    const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
-                    return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
-                } else if (activeTab === 'ordenes') {
-                    const completada = i.estado === 'completado' || i.estado === 'terminado';
-                    return App.appState.filterStatus === 'approved' ? completada : !completada;
-                } else if (activeTab === 'supervisiones') {
-                    const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
-                    return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
-                }
-                return true;
-            });
-        }
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = `Reporte_${tab.toUpperCase()}_${Date.now()}.csv`; 
+        a.click(); 
+        URL.revokeObjectURL(url);
+    },
 
-        if (!filtered.length) return alert('No hay registros para exportar con los filtros actuales.');
-        if (!confirm(`Se van a descargar ${filtered.length} archivos PDF individuales.\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
+    // Generar PDFs secuenciales sin importar filtros de pantalla
+    async generatePDFs(items, activeTab) {
+        if (!confirm(`Se van a descargar ${items.length} archivos PDF individuales.\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
 
-        // 3. Mostrar pantalla de carga interactiva
         const loadingDiv = document.createElement('div');
         loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;font-family:sans-serif;';
         loadingDiv.innerHTML = `
             <div class="spinner" style="margin-bottom:20px; width:50px; height:50px; border:5px solid #f3f3f3; border-top:5px solid #3b82f6; border-radius:50%; animation:spin 1s linear infinite;"></div>
-            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
             <h2 style="margin:0 0 10px 0;">Generando PDFs individuales...</h2>
-            <p id="pdfProgress" style="font-size:18px; font-weight:bold; color:#32cd32;">Preparando 0 de ${filtered.length}</p>
+            <p id="pdfProgress" style="font-size:18px; font-weight:bold; color:#32cd32;">Preparando 0 de ${items.length}</p>
             <p style="font-size:14px; margin-top:20px; color:#cbd5e1; text-align:center; max-width:80%;">Por favor, no cierres esta ventana mientras se descargan.<br>Asegúrate de permitir las descargas múltiples si el navegador te lo pregunta.</p>
         `;
         document.body.appendChild(loadingDiv);
         const progressText = document.getElementById('pdfProgress');
 
-        // 4. Crear contenedor temporal
         const container = document.createElement('div');
-        // IMPORTANTE: Lo colocamos fuera de pantalla pero con top:0 para evitar bugs de html2canvas
         container.style.cssText = 'position:absolute; left:-9999px; top:0; width: 800px; background: white;';
         document.body.appendChild(container);
 
-        // 5. Procesar uno por uno secuencialmente
         try {
-            for (let i = 0; i < filtered.length; i++) {
-                const item = filtered[i];
-                progressText.innerText = `Descargando ${i + 1} de ${filtered.length}...`;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                progressText.innerText = `Descargando ${i + 1} de ${items.length}...`;
 
-                    // Generar el HTML completo de la vista
                 let htmlContent = activeTab === 'checklists' ? AdminView.renderReportDetails(item) :
                                   activeTab === 'ordenes' ? AdminView.renderOrdenDetails(item) :
                                   this.renderSupervisionDetails(item);
-                    
-                    // Inyectar en el contenedor para que el DOM lo renderice
-                    container.innerHTML = htmlContent;
+                
+                container.innerHTML = htmlContent;
 
-                    // ¡AQUÍ ESTÁ LA CLAVE! 
-                    // Extraemos exactamente el mismo recuadro que usa downloadPDF()
-                    let elementToPrint;
-                    if (activeTab === 'checklists') {
-                        elementToPrint = document.getElementById(`report-content-${item.id}`);
-                    } else if (activeTab === 'ordenes') {
-                        elementToPrint = document.getElementById(`orden-content-${item.id}`);
-                    } else {
-                        elementToPrint = container.firstElementChild; // Supervisiones no tiene ID interno
-                    }
+                let elementToPrint;
+                if (activeTab === 'checklists') {
+                    elementToPrint = document.getElementById(`report-content-${item.id}`);
+                } else if (activeTab === 'ordenes') {
+                    elementToPrint = document.getElementById(`orden-content-${item.id}`);
+                } else {
+                    elementToPrint = container.firstElementChild; 
+                }
 
-                    // Asegurarnos de ocultar botones si llegara a existir alguno dentro
-                    const style = document.createElement('style');
-                    style.innerHTML = '.btn, button { display: none !important; }';
-                    if (elementToPrint) elementToPrint.appendChild(style);
+                const style = document.createElement('style');
+                style.innerHTML = '.btn, button { display: none !important; }';
+                if (elementToPrint) elementToPrint.appendChild(style);
                 
                 let prefix = activeTab === 'checklists' ? 'Inspeccion_' + (item.ecoUnidad || '') :
                              activeTab === 'ordenes' ? 'Orden_' + (item.folio || '') :
                              'Supervision_' + ((item.nombreSupervisor || '').split(' ')[0]);
                 
-                // Se agregó ID único al nombre del archivo para que el navegador no los empalme o cancele
                 let filename = `${prefix}_${(item.fecha || '').replace(/\//g, '-')}_${item.id || i}`;
 
-                    // Opciones idénticas a la función downloadPDF original
                 const opt = {
                     margin: [0.5, 0.5, 0.5, 0.5],
                     filename: `${filename}.pdf`,
                     image: { type: 'jpeg', quality: 0.95 },
-                        html2canvas: { scale: 2, letterRendering: true, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
+                    html2canvas: { scale: 2, letterRendering: true, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
                     jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
                 };
 
-                    await html2pdf().set(opt).from(elementToPrint || container).save();
-                // Damos un poco más de tiempo (1.2 seg) entre descargas para no trabar el navegador
+                await html2pdf().set(opt).from(elementToPrint || container).save();
                 await new Promise(resolve => setTimeout(resolve, 1200));
             }
-            alert(`✅ Se han descargado ${filtered.length} PDFs correctamente.`);
+            alert(`✅ Se han descargado ${items.length} archivos correctamente.`);
         } catch (error) {
             console.error('Error generando PDFs:', error);
-            alert('Ocurrió un error al generar los PDFs. Verifica la consola para más detalles.');
+            alert('Ocurrió un error al generar las descargas.');
         } finally {
             document.body.removeChild(loadingDiv);
             document.body.removeChild(container);
@@ -978,14 +1167,14 @@ const AdminController = {
         
         if (App.appState.activeTab === 'checklists') await StorageService.clearReports();
         else if (App.appState.activeTab === 'ordenes') await StorageService.clearOrdenes();
-        else localStorage.removeItem('supervisiones');
+        else await StorageService.clearSupervisiones();
         
         this.loadReportsIntoPanel();
     },
 
     // Gráfica
     updateStatsChart(d, t) {
-        if (!Chart) return;
+        if (typeof Chart === 'undefined') return;
         const ctx = document.getElementById('statsChart');
         if (!ctx) return;
         if (this.chartInstance) this.chartInstance.destroy();
@@ -1061,7 +1250,7 @@ const AdminController = {
         
         const opt = {
             margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `${fileName}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
+            filename: `${fileName}.pdf`,
             image: { type: 'jpeg', quality: 0.95 },
             html2canvas: { scale: 2, letterRendering: true, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }

@@ -1,68 +1,6 @@
 // admin.js - Vistas del panel de administración
 
 const AdminView = {
-    // Vista de login para SUPERVISOR
-    renderLogin() {
-        return `
-            <div class="container">
-                <div style="text-align: center; padding: 40px 20px;">
-                    <h2 style="color: #1e293b; margin-bottom: 30px;">👨‍💼 Acceso Supervisor</h2>
-                    
-                    <div class="card" style="max-width: 300px; margin: 0 auto;">
-                        <div class="form-group">
-                            <label>Clave de acceso</label>
-                            <input type="password" 
-                                    id="adminPassword"
-                                    placeholder="Ingresa la clave"
-                                    style="text-align: center; font-weight: bold;">
-                        </div>
-                        
-                        <button onclick="AdminController.checkPassword()" class="btn btn-primary">
-                            Ingresar
-                        </button>
-                        
-                        <button onclick="App.goToStep('home')" 
-                                class="btn btn-secondary"
-                                style="margin-top: 10px;">
-                            Volver
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-    
-    // Vista de login para TALLER
-    renderTallerLogin() {
-        return `
-            <div class="container">
-                <div style="text-align: center; padding: 40px 20px;">
-                    <h2 style="color: #1e293b; margin-bottom: 30px;">🔧 Acceso Taller Mecánico</h2>
-                    
-                    <div class="card" style="max-width: 300px; margin: 0 auto;">
-                        <div class="form-group">
-                            <label>Clave de acceso</label>
-                            <input type="password" 
-                                    id="tallerPassword"
-                                    placeholder="Ingresa la clave"
-                                    style="text-align: center; font-weight: bold;">
-                        </div>
-                        
-                        <button onclick="AdminController.checkTallerPassword()" class="btn btn-primary" style="background: #0f172a;">
-                            Ingresar al Taller
-                        </button>
-                        
-                        <button onclick="App.goToStep('home')" 
-                                class="btn btn-secondary"
-                                style="margin-top: 10px;">
-                            Volver
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-    
     // Vista del panel SUPERVISOR
     renderPanel(appState) {
         const d = new Date();
@@ -85,9 +23,13 @@ const AdminView = {
                         </div>
                     </div>
                     <div style="display: flex; gap: 6px; flex-shrink: 0;">
-                        <button onclick="AdminController.showExportOptions()"
+                        <button onclick="AdminController.showExportDialog('pdf')"
                                 style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                             <i class='bx bxs-file-pdf'></i> PDF
+                        </button>
+                        <button onclick="AdminController.showExportDialog('csv')"
+                                style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <i class='bx bx-spreadsheet'></i> CSV
                         </button>
                     ${appState.userRole === 'admin' ? `
                         <button onclick="AdminController.showPasswordModal()"
@@ -270,11 +212,11 @@ const AdminView = {
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button onclick="AdminController.showExportOptions()"
+                        <button onclick="AdminController.showExportDialog('pdf')"
                                 style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                             📄 Exportar PDF
                         </button>
-                        <button onclick="AdminController.exportToCSV()"
+                        <button onclick="AdminController.showExportDialog('csv')"
                                 style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                             Exportar
                         </button>
@@ -373,7 +315,7 @@ const AdminView = {
         const contentId = `report-content-${report.id}`;
         
         // Obtener los puntos de inspección según el tipo de ruta del reporte
-        const tipoRuta = report.tipoRuta || 'Utilitario';
+        const tipoRuta = report.tipoRuta || 'Cilindros'; // Fallback a formato Normal para reportes antiguos
         const inspectionPoints = CONFIG.getInspectionPointsByRouteType(tipoRuta);
         
         const getStatusRow = (point) => {
@@ -397,7 +339,6 @@ const AdminView = {
             }
 
             const evaluacion = report.evaluaciones && report.evaluaciones[point.id];
-            if (!evaluacion) return '';
             
             const isApproved = evaluacion === 'aprobado';
             const isRejected = evaluacion === 'rechazado';
@@ -538,12 +479,12 @@ const AdminView = {
                 ${photosHtml}
                 
                 <!-- BOTONES DE ACCIÓN -->
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <div style="display: flex; gap: 10px; margin-top: 20px;" data-html2canvas-ignore>
                     <button onclick="ModalService.close()"
                             class="btn btn-secondary" style="flex: 1;">
                         Cerrar
                     </button>
-                    <button onclick="AdminController.downloadPDF('${contentId}', 'Listado_Revision_${report.ecoUnidad}')"
+                    <button onclick="AdminController.downloadPDF('${contentId}', 'Inspeccion_${report.ecoUnidad || ''}_${(report.fecha || '').replace(/\//g, '-')}')"
                             class="btn btn-danger" style="flex: 1;">
                         📄 Descargar PDF
                     </button>
@@ -727,12 +668,12 @@ const AdminView = {
                     ` : ''}
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <div style="display: flex; gap: 10px; margin-top: 20px;" data-html2canvas-ignore>
                     <button onclick="ModalService.close()"
                             class="btn btn-secondary" style="flex: 1;">
                         Cerrar
                     </button>
-                    <button onclick="AdminController.downloadPDF('${contentId}', 'Orden_${orden.folio}')"
+                    <button onclick="AdminController.downloadPDF('${contentId}', 'Orden_${orden.folio || ''}_${(orden.fecha || '').replace(/\//g, '-')}')"
                             class="btn btn-danger" style="flex: 1;">
                         📄 Descargar PDF
                     </button>

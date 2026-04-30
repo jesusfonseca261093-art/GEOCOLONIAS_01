@@ -99,13 +99,24 @@ const FormController = {
         }
         
         // Validar respaldo de datos (Catálogos)
-        if (!CONFIG.OPERATORS.includes(appState.formData.operador)) {
-            alert("El Operador ingresado no es válido. Por favor selecciónalo de la lista sugerida.");
-            return;
+        const isTestOp = appState.formData.operador.toLowerCase().includes('prueba');
+        if (!isTestOp && CONFIG.OPERATORS && CONFIG.OPERATORS.length > 0) {
+            const matchedOp = CONFIG.OPERATORS.find(op => op.trim().toUpperCase() === appState.formData.operador.trim().toUpperCase());
+            if (!matchedOp) {
+                alert("El Operador ingresado no es válido. Por favor selecciónalo de la lista sugerida.");
+                return;
+            }
+            appState.formData.operador = matchedOp; // Normaliza el texto
         }
-        if (!CONFIG.UNITS.includes(appState.formData.eco)) {
-            alert("La Unidad ingresada no es válida. Por favor selecciónala de la lista sugerida.");
-            return;
+        
+        const isTestUnit = appState.formData.eco.toLowerCase().includes('prueba');
+        if (!isTestUnit && CONFIG.UNITS && CONFIG.UNITS.length > 0) {
+            const matchedUnit = CONFIG.UNITS.find(u => u.trim().toUpperCase() === appState.formData.eco.trim().toUpperCase());
+            if (!matchedUnit) {
+                alert("La Unidad ingresada no es válida. Por favor selecciónala de la lista sugerida.");
+                return;
+            }
+            appState.formData.eco = matchedUnit; // Normaliza el texto
         }
         
         // Validar que la ruta seleccionada sea válida para el tipo
