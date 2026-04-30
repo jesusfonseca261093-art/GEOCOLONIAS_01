@@ -868,237 +868,103 @@ const AdminController = {
         `; 
     },
 
-    // Diálogo unificado para exportar PDF / CSV
-    showExportDialog(format) {
+    // --- NUEVAS FUNCIONES DE EXPORTACIÓN FUSIONADAS ---
+    async getFilteredDataForExport() {
+        let data = App.appState.step === 'taller-panel' ? await StorageService.loadOrdenes() :
+                   App.appState.activeTab === 'checklists' ? await StorageService.loadReports() :
+                   App.appState.activeTab === 'ordenes' ? await StorageService.loadOrdenes() :
+                   await StorageService.loadSupervisiones();
+        
+        if (!data.length) return [];
+        
+        // Descartar registros de prueba para no exportarlos
+        let filtered = data.filter(i => !this.isTestRecord(i));
+        
+        if (App.appState.filterSearch) {
+            const s = App.appState.filterSearch.toLowerCase();
+            filtered = filtered.filter(i => i.operador?.toLowerCase().includes(s) || 
+                                           i.unidad?.toLowerCase().includes(s) || 
+                                           i.folio?.toString().includes(s) || 
+                                           i.nombreSupervisor?.toLowerCase().includes(s));
+        }
+        
+        if (App.appState.activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
+            filtered = filtered.filter(i => (i.tipoRuta || 'Utilitario') === App.appState.filterTipoRuta);
+        }
+        
+        if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
+            filtered = filtered.filter(i => {
+                if (App.appState.activeTab === 'checklists') {
+                    const hasFallas = Object.values(i.evaluaciones || {}).includes('rechazado');
+                    return App.appState.filterStatus === 'approved' ? !hasFallas : hasFallas;
+                } else if (App.appState.activeTab === 'ordenes') {
+                    const completada = i.estado === 'completado' || i.estado === 'terminado';
+                    return App.appState.filterStatus === 'approved' ? completada : !completada;
+                } else if (App.appState.activeTab === 'supervisiones') {
+                    const conEvidencia = (i.evidenciasFotos && i.evidenciasFotos.length > 0) || i.evidenciaFoto;
+                    return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
+                }
+                return true;
+            });
+        }
+        return filtered;
+    },
+
+    getCSVForExport(filtered) {
+        return App.appState.activeTab === 'supervisiones' ? this.exportToCSVFormat(filtered, 'supervisiones') : 
+               StorageService.exportToCSV(filtered, App.appState.activeTab === 'checklists' ? 'checklists' : 'ordenes');
+    },
+    
+    async exportToCSV() {
+        if (App.appState.step !== 'taller-panel' && App.appState.activeTab === 'mapas') return alert('Esta función no aplica para el mapa.');
+        const filtered = await this.getFilteredDataForExport();
+        if (!filtered.length) return alert('Sin datos');
+        
+        const csv = this.getCSVForExport(filtered);
+        const url = URL.createObjectURL(new Blob(['\uFEFF'+csv], {type:'text/csv'}));
+        const a = document.createElement('a'); 
+        a.href = url; a.download = `export_${Date.now()}.csv`; a.click(); 
+        URL.revokeObjectURL(url);
+        alert(`Exportados ${filtered.length} registros`);
+    },
+
+    async exportToExcel() {
+        if (App.appState.step !== 'taller-panel' && App.appState.activeTab === 'mapas') return alert('Esta función no aplica para el mapa.');
+        const filtered = await this.getFilteredDataForExport();
+        if (!filtered.length) return alert('Sin datos');
+
+        const csv = this.getCSVForExport(filtered);
+        const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'application/vnd.ms-excel;charset=utf-8;' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `export_${Date.now()}.xls`; a.click();
+        URL.revokeObjectURL(url);
+        alert(`Exportados ${filtered.length} registros a Excel`);
+    },
+    
+    exportToCSVFormat(d,t) { 
+        if (t === 'supervisiones') {
+            return 'Fecha,Hora,Supervisor,Pedido,Cliente,Teléfono,Motivo,Solución,Ubicación\n' + 
+                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${i.numeroPedido}","${i.nombreCliente}","${i.telefonoCliente}","${i.motivoQueja}","${i.solucion}","${i.ubicacion}"`).join('\n');
+        }
+        return '';
+    },
+
+    async exportAllToPDF() {
         const isTaller = App.appState.step === 'taller-panel';
         const activeTab = isTaller ? 'ordenes' : App.appState.activeTab;
-        
         if (activeTab === 'mapas') return alert('Esta función no aplica para el mapa.');
 
-        const html = `
-            <div style="padding: 25px; font-family: Arial, sans-serif; text-align: left;">
-                <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">Exportar a ${format.toUpperCase()}</h3>
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Selecciona qué datos deseas descargar. Esta opción ignorará los filtros de la pantalla y descargará toda la información directa de la base de datos.</p>
-                
-                <div style="margin-bottom: 15px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #334155;">
-                        <input type="radio" name="exportMode" value="all" checked onchange="document.getElementById('exportDateDiv').style.display='none'" style="width: 18px; height: 18px;">
-                        Descargar TODO el historial
-                    </label>
-                </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; font-weight: bold; color: #334155;">
-                        <input type="radio" name="exportMode" value="date" onchange="document.getElementById('exportDateDiv').style.display='block'" style="width: 18px; height: 18px;">
-                        Descargar de un DÍA en específico
-                    </label>
-                    <div id="exportDateDiv" style="display: none; margin-top: 10px; padding-left: 28px;">
-                        <input type="date" id="exportDateInput" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; max-width: 200px; font-size: 14px; background: #f8fafc;">
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="ModalService.close()" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
-                    <button onclick="AdminController.executeExport('${format}', '${activeTab}')" class="btn btn-primary" style="flex: 1; background: ${format === 'pdf' ? '#ef4444' : '#10b981'}; border: none;">
-                        ${format === 'pdf' ? '📄 Generar PDFs' : '📊 Descargar CSV'}
-                    </button>
-                </div>
-            </div>
-        `;
-        ModalService.show(html);
-    },
-
-    // Ejecutar la exportación según la selección
-    async executeExport(format, tab) {
-        const mode = document.querySelector('input[name="exportMode"]:checked').value;
-        let selectedDate = null;
-        
-        if (mode === 'date') {
-            selectedDate = document.getElementById('exportDateInput').value;
-            if (!selectedDate) return alert('Por favor, selecciona una fecha válida.');
-        }
-        
-        ModalService.close();
-        
-        const loadingDiv = document.createElement('div');
-        loadingDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px 40px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:10000;text-align:center;';
-        loadingDiv.innerHTML = '<div class="spinner" style="margin:10px auto;"></div><p style="font-weight:bold;color:#475569;">Descargando datos de la nube...</p>';
-        document.body.appendChild(loadingDiv);
-
-        try {
-            let items = tab === 'checklists' ? await StorageService.loadReports() :
-                        tab === 'ordenes' ? await StorageService.loadOrdenes() :
-                        await StorageService.loadSupervisiones();
-            
-            if (!items || items.length === 0) {
-                document.body.removeChild(loadingDiv);
-                return alert('No hay datos registrados en la base de datos.');
-            }
-
-            // Filtrar reportes de prueba para que NO sean exportables
-            items = items.filter(i => !this.isTestRecord(i));
-
-            if (selectedDate) {
-                const [year, month, day] = selectedDate.split('-').map(Number);
-                items = items.filter(i => {
-                    let itemYear, itemMonth, itemDay;
-                    if (i.timestamp) {
-                        const d = new Date(i.timestamp);
-                        itemYear = d.getFullYear(); itemMonth = d.getMonth() + 1; itemDay = d.getDate();
-                    } else if (i.fecha) {
-                        if (i.fecha.includes('/')) {
-                            const parts = i.fecha.split('/').map(Number);
-                            itemDay = parts[0]; itemMonth = parts[1]; itemYear = parts[2];
-                        } else if (i.fecha.includes('-')) {
-                            const parts = i.fecha.split('-').map(Number);
-                            itemYear = parts[0]; itemMonth = parts[1]; itemDay = parts[2];
-                        }
-                    }
-                    return itemYear === year && itemMonth === month && itemDay === day;
-                });
-            }
-            
-            document.body.removeChild(loadingDiv);
-
-            if (items.length === 0) return alert('No hay registros para la fecha seleccionada.');
-            
-            if (format === 'csv') {
-                this.generateCSV(items, tab);
-            } else {
-                this.generatePDFs(items, tab);
-            }
-        } catch (error) {
-            if (document.body.contains(loadingDiv)) document.body.removeChild(loadingDiv);
-            console.error(error);
-            alert("Error al extraer los datos.");
-        }
-    },
-
-    // Generar archivo CSV ultra-detallado idéntico al PDF
-    generateCSV(items, tab) {
-        let csv = '';
-        const escapeCSV = str => `"${(str || '').toString().replace(/"/g, '""')}"`;
-        
-        if (tab === 'checklists') {
-            let allPoints = [];
-            if (window.CONFIG) {
-                allPoints = [
-                    ...(window.CONFIG.INSPECTION_POINTS_NORMAL || []),
-                    ...(window.CONFIG.INSPECTION_POINTS_AUTOTANQUE || []),
-                    ...(window.CONFIG.INSPECTION_POINTS_UTILITARIO || [])
-                ].filter(p => !p.isHeader);
-            }
-            
-            let uniquePoints = [];
-            let seenIds = new Set();
-            allPoints.forEach(p => {
-                if (!seenIds.has(p.id)) {
-                    seenIds.add(p.id);
-                    uniquePoints.push(p);
-                }
-            });
-
-            let header = ['Identificador_Reporte', 'Fecha', 'Hora', 'Operador', 'Unidad', 'Tipo_Ruta', 'Ruta', 'KM', 'Estado_General', 'Observaciones_Fallas_Detectadas'];
-            uniquePoints.forEach(p => header.push(escapeCSV(p.label)));
-            csv = header.join(',') + '\n';
-            
-            items.forEach(report => {
-                const evaluaciones = report.evaluaciones || {};
-                const rechazados = Object.values(evaluaciones).filter(e => e === 'rechazado').length;
-                const estado = rechazados > 0 ? 'CON FALLAS' : 'APROBADO';
-                
-                let row = [
-                    escapeCSV(report.id),
-                    escapeCSV(report.fecha),
-                    escapeCSV(report.hora),
-                    escapeCSV(report.operador),
-                    escapeCSV(report.ecoUnidad),
-                    escapeCSV(report.tipoRuta || 'Utilitario'),
-                    escapeCSV(report.ruta),
-                    report.km || 0,
-                    escapeCSV(estado),
-                    escapeCSV(report.observaciones)
-                ];
-                
-                uniquePoints.forEach(p => {
-                    let val = evaluaciones[p.id];
-                    let strVal = val === 'aprobado' ? 'Cumple' : (val === 'rechazado' ? 'No Cumple' : 'N/A');
-                    row.push(escapeCSV(strVal));
-                });
-                
-                csv += row.join(',') + '\n';
-            });
-            
-        } else if (tab === 'ordenes') {
-            let header = ['Folio_Orden', 'Fecha', 'Hora_Reporte', 'Hora_Termino', 'Tiempo_Muerto', 'Unidad', 'Operador', 'Kilometraje', 'Lugar_Mantenimiento', 'Tipo_Mantenimiento', 'Estado_Proceso', 'Descripcion_Falla_Reportada', 'Trabajo_Realizado_Taller', 'Puntos_Criticos_Revisados', 'Observaciones_Adicionales'];
-            csv = header.join(',') + '\n';
-            
-            items.forEach(o => {
-                let row = [
-                    escapeCSV(o.folio),
-                    escapeCSV(o.fecha),
-                    escapeCSV(o.horaReporte),
-                    escapeCSV(o.horaTermino),
-                    escapeCSV(o.tiempoMuerto),
-                    escapeCSV(o.unidad),
-                    escapeCSV(o.operador),
-                    o.kilometro || 0,
-                    escapeCSV(o.mantenimientoLugar === 'taller' ? 'Taller' : 'Ruta'),
-                    escapeCSV(o.tipoMantenimiento),
-                    escapeCSV(o.estado),
-                    escapeCSV(o.descripcionFalla),
-                    escapeCSV(o.trabajoRealizado),
-                    escapeCSV((o.puntosCriticos || []).join('; ')),
-                    escapeCSV(o.observaciones)
-                ];
-                csv += row.join(',') + '\n';
-            });
-            
-        } else if (tab === 'supervisiones') {
-            let header = ['Fecha', 'Hora', 'Supervisor', 'Pedido', 'Cliente', 'Teléfono', 'Calle', 'Número', 'Colonia', 'Ubicación_Coordenadas_Google', 'Detalle_Visita', 'Motivo_Queja', 'Solución_Brindada', 'Comentarios_Adicionales', 'Enlace_Directo_Maps'];
-            csv = header.join(',') + '\n';
-            items.forEach(i => {
-                let row = [
-                    escapeCSV(i.fecha),
-                    escapeCSV(i.hora),
-                    escapeCSV(i.nombreSupervisor),
-                    escapeCSV(i.numeroPedido),
-                    escapeCSV(i.nombreCliente),
-                    escapeCSV(i.telefonoCliente),
-                    escapeCSV(i.calle),
-                    escapeCSV(i.numero),
-                    escapeCSV(i.colonia),
-                    escapeCSV(i.ubicacion),
-                    escapeCSV(i.detalleVisita),
-                    escapeCSV(i.motivoQueja),
-                    escapeCSV(i.solucion),
-                    escapeCSV(i.comentario),
-                    escapeCSV(i.enlaceMaps)
-                ];
-                csv += row.join(',') + '\n';
-            });
-        }
-        
-        const BOM = '\uFEFF';
-        const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = `Reporte_${tab.toUpperCase()}_${Date.now()}.csv`; 
-        a.click(); 
-        URL.revokeObjectURL(url);
-    },
-
-    // Generar PDFs secuenciales sin importar filtros de pantalla
-    async generatePDFs(items, activeTab) {
-        if (!confirm(`Se van a descargar ${items.length} archivos PDF individuales.\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
+        const filtered = await this.getFilteredDataForExport();
+        if (!filtered.length) return alert('No hay registros para exportar con los filtros actuales.');
+        if (!confirm(`Se van a descargar ${filtered.length} archivos PDF individuales.\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
 
         const loadingDiv = document.createElement('div');
         loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;font-family:sans-serif;';
         loadingDiv.innerHTML = `
             <div class="spinner" style="margin-bottom:20px; width:50px; height:50px; border:5px solid #f3f3f3; border-top:5px solid #3b82f6; border-radius:50%; animation:spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
             <h2 style="margin:0 0 10px 0;">Generando PDFs individuales...</h2>
-            <p id="pdfProgress" style="font-size:18px; font-weight:bold; color:#32cd32;">Preparando 0 de ${items.length}</p>
+            <p id="pdfProgress" style="font-size:18px; font-weight:bold; color:#32cd32;">Preparando 0 de ${filtered.length}</p>
             <p style="font-size:14px; margin-top:20px; color:#cbd5e1; text-align:center; max-width:80%;">Por favor, no cierres esta ventana mientras se descargan.<br>Asegúrate de permitir las descargas múltiples si el navegador te lo pregunta.</p>
         `;
         document.body.appendChild(loadingDiv);
@@ -1109,24 +975,18 @@ const AdminController = {
         document.body.appendChild(container);
 
         try {
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                progressText.innerText = `Descargando ${i + 1} de ${items.length}...`;
+            for (let i = 0; i < filtered.length; i++) {
+                const item = filtered[i];
+                progressText.innerText = `Descargando ${i + 1} de ${filtered.length}...`;
 
                 let htmlContent = activeTab === 'checklists' ? AdminView.renderReportDetails(item) :
                                   activeTab === 'ordenes' ? AdminView.renderOrdenDetails(item) :
                                   this.renderSupervisionDetails(item);
                 
                 container.innerHTML = htmlContent;
-
-                let elementToPrint;
-                if (activeTab === 'checklists') {
-                    elementToPrint = document.getElementById(`report-content-${item.id}`);
-                } else if (activeTab === 'ordenes') {
-                    elementToPrint = document.getElementById(`orden-content-${item.id}`);
-                } else {
-                    elementToPrint = container.firstElementChild; 
-                }
+                let elementToPrint = activeTab === 'checklists' ? document.getElementById(`report-content-${item.id}`) :
+                                     activeTab === 'ordenes' ? document.getElementById(`orden-content-${item.id}`) :
+                                     container.firstElementChild;
 
                 const style = document.createElement('style');
                 style.innerHTML = '.btn, button { display: none !important; }';
@@ -1149,10 +1009,10 @@ const AdminController = {
                 await html2pdf().set(opt).from(elementToPrint || container).save();
                 await new Promise(resolve => setTimeout(resolve, 1200));
             }
-            alert(`✅ Se han descargado ${items.length} archivos correctamente.`);
+            alert(`✅ Se han descargado ${filtered.length} PDFs correctamente.`);
         } catch (error) {
             console.error('Error generando PDFs:', error);
-            alert('Ocurrió un error al generar las descargas.');
+            alert('Ocurrió un error al generar los PDFs. Verifica la consola para más detalles.');
         } finally {
             document.body.removeChild(loadingDiv);
             document.body.removeChild(container);
@@ -1250,7 +1110,7 @@ const AdminController = {
         
         const opt = {
             margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `${fileName}.pdf`,
+            filename: `${fileName}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
             image: { type: 'jpeg', quality: 0.95 },
             html2canvas: { scale: 2, letterRendering: true, useCORS: true, logging: false, scrollY: 0, scrollX: 0 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }

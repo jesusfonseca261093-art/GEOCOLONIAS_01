@@ -121,6 +121,11 @@ const App = {
                 SignatureController.initSupervisionCanvas();
                 if (typeof SupervisionController !== 'undefined') SupervisionController.obtenerUbicacionActual();
                 break;
+            case 'acta-hechos':
+                if (typeof ActaHechosView !== 'undefined' && ActaHechosView.init) {
+                    ActaHechosView.init();
+                }
+                break;
             case 'admin-panel':
                 AdminController.loadReportsIntoPanel();
                 break;
@@ -193,6 +198,9 @@ const App = {
                 break;
             case 'supervision-success':
                 app.innerHTML = SuccessView.renderSupervisionSuccess(this.appState.ultimaSupervision);
+                break;
+            case 'acta-hechos':
+                app.innerHTML = ActaHechosView.render();
                 break;
             default:
                 app.innerHTML = HomeView.render();

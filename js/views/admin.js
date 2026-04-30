@@ -27,10 +27,6 @@ const AdminView = {
                                 style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                             <i class='bx bxs-file-pdf'></i> PDF
                         </button>
-                        <button onclick="AdminController.showExportDialog('csv')"
-                                style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <i class='bx bx-spreadsheet'></i> CSV
-                        </button>
                     ${appState.userRole === 'admin' ? `
                         <button onclick="AdminController.showPasswordModal()"
                                 style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
