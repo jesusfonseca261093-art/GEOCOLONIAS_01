@@ -1,10 +1,10 @@
-// home.js - Vista de la página principal
+﻿// Desarrollador :Ing Jose de Jesus Fonseca Chavez
 
 const HomeView = {
     render() {
         return `
             <div>
-                <!-- Header Moderno con Logo y Menú -->
+                <!-- Header Moderno con Logo y MenÃº -->
                 <div class="header" style="background: #1e40af; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
                         <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 28px; width: auto; height: auto; display: flex; align-items: center; justify-content: center; padding: 4px;">
@@ -25,36 +25,36 @@ const HomeView = {
                     
                     <div class="home-menu-grid">
                         <button onclick="App.goToStep('form')" class="btn btn-primary">
-                            <i class='bx bx-list-check' style="font-size: 22px;"></i> Nuevo CHECK LIST
+                            <i class='bx bx-list-check' style="font-size: 22px;"></i> Nuevo check list
                         </button>
                         
                         <button onclick="App.goToStep('orden-servicio')" class="btn btn-warning">
-                            <i class='bx bx-wrench' style="font-size: 22px;"></i> Orden de Servicio
+                            <i class='bx bx-wrench' style="font-size: 22px;"></i> Orden de servicio
                         </button>
                         
                         <button onclick="App.goToStep('admin-panel')" class="btn" style="background: #0f172a; color: white;">
-                            <i class='bx bx-shield-quarter' style="font-size: 22px;"></i> Panel Supervisor
+                            <i class='bx bx-shield-quarter' style="font-size: 22px;"></i> Panel supervisor
                         </button>
                         
                         <button onclick="App.goToStep('taller-panel')" class="btn" style="background: #334155; color: white;">
-                            <i class='bx bx-car' style="font-size: 22px;"></i> Panel Taller
+                            <i class='bx bx-car' style="font-size: 22px;"></i> Panel taller
                         </button>
 
                         <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
-                            <i class='bx bx-map-alt' style="font-size: 22px;"></i> GEOCERCAS
+                            <i class='bx bx-map-alt' style="font-size: 22px;"></i> Geocercas
                         </button>
 
                         <button onclick="App.goToStep('supervision-form')" class="btn" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white;">
-                            <i class='bx bx-user-pin' style="font-size: 22px;"></i> SUPERVISIÓN EN CAMPO
+                            <i class='bx bx-user-pin' style="font-size: 22px;"></i> Supervisión en campo
                         </button>       
 
                         <button onclick="App.goToStep('acta-hechos')" class="btn" style="background: linear-gradient(135deg, #f70d0d 0%, #ff0505 100%); color: white;">
-                            <i class='bx bx-file' style="font-size: 22px;"></i> ACTA DE HECHOS
+                            <i class='bx bx-file' style="font-size: 22px;"></i> Acta de hechos
                         </button>
 
 
                         <button onclick="AuthController.logout()" class="btn btn-secondary">
-                            <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar Sesión
+                            <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar sesion
                         </button>
 
                     
@@ -68,22 +68,23 @@ const HomeView = {
                         </div>
                         <div class="stat-card">
                             <div class="stat-value stat-ordenes" id="stat-ordenes">--</div>
-                            <div class="stat-label">Órdenes de Hoy</div>
+                            <div class="stat-label">&Oacute;rdenes de Hoy</div>
                             <div class="home-stat-date" id="todayDate2"></div>
                         </div>
                     </div>
                     
                     <div class="home-note-card">
                         <p class="home-note-text">
-                            <strong>Nota importante:</strong> Este es un reporte de revisión diaria, por lo que no sustituye al reporte de fallas a taller. Para reportes de fallas, utiliza "Orden de Servicio".
+                            <strong>Nota importante:</strong> Este es un reporte de revisi&oacute;n diaria, por lo que no sustituye al reporte de fallas a taller. Para reportes de fallas, utiliza "Orden de servicio".
                         </p>
                     </div>
+
                 </div>
             </div>
         `;
     },
     
-    // Función para obtener la fecha actual en formato YYYY-MM-DD
+    // FunciÃ³n para obtener la fecha actual en formato YYYY-MM-DD
     getTodayDate() {
         const today = new Date();
         const year = today.getFullYear();
@@ -92,7 +93,7 @@ const HomeView = {
         return `${year}-${month}-${day}`;
     },
     
-    // Función para obtener fecha en formato legible
+    // FunciÃ³n para obtener fecha en formato legible
     getTodayFormatted() {
         const today = new Date();
         return today.toLocaleDateString('es-MX', { 
@@ -103,7 +104,7 @@ const HomeView = {
         });
     },
     
-    // Actualizar estadísticas del día
+    // Actualizar estadÃ­sticas del dÃ­a
     async updateStats() {
         try {
             const reports = await StorageService.loadReports();
@@ -171,7 +172,7 @@ const HomeView = {
             }
             
         } catch (error) {
-            console.error('Error actualizando estadísticas:', error);
+            console.error('Error actualizando estadÃ­sticas:', error);
             const elCheck = document.getElementById('stat-checklist');
             const elOrden = document.getElementById('stat-ordenes');
             if (elCheck) elCheck.textContent = '0';
@@ -184,3 +185,7 @@ const HomeView = {
 if (typeof window !== 'undefined') {
     window.HomeView = HomeView;
 }
+
+
+
+

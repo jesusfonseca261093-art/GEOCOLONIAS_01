@@ -1100,6 +1100,7 @@ input[type="date"], input[type="month"], input[type="time"] {
 .home-menu-grid .btn {
     height: 100%;
     margin: 0;
+    text-transform: lowercase;
 }
 
 @media (max-width: 480px) {
