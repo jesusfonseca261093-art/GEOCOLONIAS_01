@@ -868,6 +868,15 @@ const AdminController = {
         `; 
     },
 
+    // --- NUEVO: Puente para los botones de exportación de tu compañero ---
+    showExportDialog(format) {
+        if (format === 'pdf') {
+            this.exportAllToPDF();
+        } else if (format === 'csv') {
+            this.exportToCSV();
+        }
+    },
+
     // --- NUEVAS FUNCIONES DE EXPORTACIÓN FUSIONADAS ---
     async getFilteredDataForExport() {
         let data = App.appState.step === 'taller-panel' ? await StorageService.loadOrdenes() :

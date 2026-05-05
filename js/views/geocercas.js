@@ -624,7 +624,9 @@ const GeocercasView = {
                                 if (l.pm && l !== layer) l.pm.disable();
                             });
                         }
-                        layer.pm.toggleEdit();
+                        if (layer.pm) {
+                            layer.pm.enable(); // Encender los vértices firmemente al hacer clic
+                        }
                     });
 
                     layer.on('pm:update', (e) => {
