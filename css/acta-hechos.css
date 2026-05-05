@@ -18,7 +18,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 260px;
+    width: 100%;
     max-width: 100%;
 }
 
@@ -31,14 +31,17 @@
 
 .acta-docs .print-page {
     background: white;
-    width: 216mm;
-    min-height: 279mm;
+    width: 215.9mm;
+    min-height: 279.4mm;
     margin: 20px auto;
-    padding: 2cm 2.5cm;
+    padding: 14mm 18mm;
+    box-sizing: border-box;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     position: relative;
     color: black;
-    line-height: 1.15;
+    font-family: 'Tinos', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.25;
     overflow: hidden;
 }
 
@@ -56,7 +59,7 @@
 }
 
 .acta-docs .print-header img {
-    width: 120px;
+    width: 110px;
     max-width: 32%;
     height: auto;
     object-fit: contain;
@@ -76,7 +79,7 @@
 }
 
 .acta-docs .signature-img {
-    max-height: 64px;
+    max-height: 44px;
     max-width: 100%;
     object-fit: contain;
     display: block;
@@ -86,7 +89,7 @@
 
 .acta-docs .signature-slot {
     width: 100%;
-    height: 66px;
+    height: 46px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -178,13 +181,196 @@
     aspect-ratio: 16 / 10;
 }
 
+.acta-docs .acta-title {
+    margin: 6mm 0 12mm;
+    text-align: center;
+    font-size: 15pt;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+}
+
+.acta-docs .acta-intro {
+    margin: 0 0 7mm;
+    line-height: 1.45;
+}
+
+.acta-docs .acta-date {
+    display: inline-block;
+    min-width: 42mm;
+    padding: 0 1mm;
+    border-bottom: 1px solid #000;
+    font-weight: 700;
+    text-align: center;
+}
+
+.acta-docs .acta-text-block {
+    margin-bottom: 7mm;
+}
+
+.acta-docs .acta-text-block-title {
+    display: block;
+    margin-bottom: 2mm;
+    font-weight: 700;
+}
+
+.acta-docs .acta-written-text {
+    min-height: 8mm;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: justify;
+}
+
+.acta-docs .acta-writing-lines {
+    display: grid;
+    gap: 4mm;
+    margin-top: 2mm;
+}
+
+.acta-docs .acta-writing-lines span {
+    display: block;
+    border-bottom: 1px solid #000;
+    height: 4mm;
+}
+
+.acta-docs .signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 18mm;
+    row-gap: 6mm;
+    margin-top: 10mm;
+}
+
+.acta-docs .signature-group {
+    display: grid;
+    gap: 9mm;
+}
+
+.acta-docs .signature-label {
+    margin: 0 0 3mm;
+    font-size: 10pt;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.acta-docs .signature-name {
+    min-height: 5mm;
+    padding-top: 1mm;
+    font-size: 9pt;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.acta-docs .signature-caption {
+    margin: 0;
+    font-size: 10pt;
+    font-weight: 700;
+    text-align: center;
+}
+
+.acta-docs .director-signature {
+    margin-top: 10mm;
+    text-align: center;
+}
+
+.acta-docs .director-signature-line {
+    width: 84mm;
+    margin: 0 auto 1mm;
+    border-top: 1px solid #000;
+}
+
+.acta-docs .director-signature p {
+    margin: 0;
+    font-size: 10pt;
+    text-transform: uppercase;
+}
+
+.acta-docs .annex-title {
+    margin: 3mm 0 8mm;
+    text-align: center;
+    font-size: 15pt;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-decoration: underline;
+    text-transform: uppercase;
+}
+
+.acta-docs .annex-location {
+    margin-bottom: 7mm;
+    padding: 4mm 5mm;
+    border: 2px dashed #d1d5db;
+    border-radius: 4px;
+}
+
+.acta-docs .annex-location span {
+    display: block;
+    color: #6b7280;
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.acta-docs .annex-location p {
+    margin: 1mm 0 0;
+    color: #000;
+    font-size: 13pt;
+    font-style: italic;
+    font-weight: 700;
+}
+
+.acta-pdf-export {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 215.9mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    z-index: -1;
+}
+
+.acta-pdf-export .print-page {
+    width: 215.9mm;
+    height: 279.4mm;
+    min-height: 279.4mm;
+    margin: 0;
+    padding: 14mm 18mm;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+}
+
+.acta-pdf-export .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+}
+
+.acta-pdf-export .page-watermark {
+    display: block;
+}
+
 @media print {
+    @page {
+        size: letter portrait;
+        margin: 7mm;
+    }
+
     .no-print {
         display: none !important;
     }
 
+    html,
     body {
         background: white;
+        margin: 0;
+        padding: 0;
+        width: auto;
+    }
+
+    .acta-docs {
+        width: auto;
         margin: 0;
         padding: 0;
     }
@@ -193,27 +379,288 @@
         box-shadow: none !important;
         border: none !important;
         margin: 0 !important;
-        padding: 1.2cm 1.8cm !important;
-        width: 216mm;
-        height: 279mm;
+        padding: 6mm 10mm !important;
+        width: 100%;
+        height: calc(279.4mm - 14mm);
+        min-height: calc(279.4mm - 14mm);
+        box-sizing: border-box;
+        overflow: hidden;
+        break-after: page;
         page-break-after: always;
     }
 
+    .acta-docs .print-page:last-child {
+        break-after: auto;
+        page-break-after: auto;
+    }
+
     .acta-docs .page-break {
-        page-break-before: always;
+        break-before: auto;
+        page-break-before: auto;
     }
 
     .acta-docs .print-page .page-watermark {
         display: block;
     }
 
+    .acta-docs #hoja1 .print-header {
+        margin-bottom: 4px;
+    }
+
+    .acta-docs #hoja1 .print-header img {
+        width: 105px;
+    }
+
+    .acta-docs #hoja1 .signature-slot {
+        height: 42px;
+    }
+
+    .acta-docs #hoja1 .signature-img {
+        max-height: 40px;
+    }
+
+    .acta-docs .acta-title {
+        margin: 3mm 0 7mm;
+    }
+
+    .acta-docs .acta-intro,
+    .acta-docs .acta-text-block {
+        margin-bottom: 5mm;
+    }
+
+    .acta-docs .acta-written-text {
+        min-height: 6mm;
+    }
+
+    .acta-docs .acta-writing-lines {
+        gap: 3mm;
+    }
+
+    .acta-docs .signature-grid {
+        column-gap: 14mm;
+        margin-top: 8mm;
+    }
+
+    .acta-docs .signature-group {
+        gap: 7mm;
+    }
+
+    .acta-docs .signature-label {
+        margin-bottom: 2mm;
+    }
+
+    .acta-docs .director-signature {
+        margin-top: 8mm;
+    }
+
     .acta-docs .annex-page {
-        padding-top: 0.75cm !important;
+        padding-top: 6mm !important;
     }
 
     .acta-docs .annex-page .evidence-label {
         margin-top: 2px;
         font-size: 6pt;
+    }
+}
+
+/* Print hardening for Acta de Hechos signatures and page breaks. */
+@media print {
+    @page {
+        size: letter portrait;
+        margin: 8mm;
+    }
+
+    html,
+    body {
+        width: auto !important;
+        min-width: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    .acta-docs {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    .acta-docs .print-page {
+        width: 100% !important;
+        min-height: calc(279.4mm - 16mm) !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 6mm 10mm !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .acta-docs .print-page:last-child,
+    .acta-docs .print-page:only-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }
+
+    .acta-docs .print-page:empty {
+        display: none !important;
+    }
+
+    .acta-docs .page-break {
+        break-before: auto !important;
+        page-break-before: auto !important;
+    }
+
+    .acta-docs .print-header {
+        margin-bottom: 3mm !important;
+    }
+
+    .acta-docs .print-header img {
+        width: 105px !important;
+        max-width: 32mm !important;
+    }
+
+    .acta-docs .acta-title {
+        margin: 2mm 0 6mm !important;
+        font-size: 14pt !important;
+        letter-spacing: 0.2em !important;
+    }
+
+    .acta-docs .acta-intro,
+    .acta-docs .acta-text-block {
+        margin-bottom: 4mm !important;
+    }
+
+    .acta-docs .acta-written-text {
+        min-height: 5mm !important;
+        line-height: 1.25 !important;
+    }
+
+    .acta-docs .acta-writing-lines {
+        gap: 2.5mm !important;
+        margin-top: 1.5mm !important;
+    }
+
+    .acta-docs .acta-writing-lines span {
+        height: 3mm !important;
+    }
+
+    .acta-docs .signature-grid,
+    .acta-docs #hoja1 > .grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        column-gap: 14mm !important;
+        row-gap: 6mm !important;
+        align-items: start !important;
+        margin-top: 7mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .acta-docs .signature-group,
+    .acta-docs #hoja1 .space-y-20 {
+        display: grid !important;
+        gap: 7mm !important;
+        margin: 0 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .acta-docs .acta-signature-container {
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 28mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-end !important;
+        align-items: stretch !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .acta-docs .signature-label,
+    .acta-docs #hoja1 .acta-signature-container > p:first-child {
+        margin: 0 0 2mm !important;
+        font-size: 9.5pt !important;
+        line-height: 1.1 !important;
+        text-align: center !important;
+    }
+
+    .acta-docs #hoja1 .acta-signature-container > p {
+        margin-top: 0 !important;
+        margin-bottom: 2mm !important;
+    }
+
+    .acta-docs #hoja1 .mt-20,
+    .acta-docs #hoja1 .mb-14 {
+        margin-top: 0 !important;
+        margin-bottom: 2mm !important;
+    }
+
+    .acta-docs .signature-slot {
+        height: 13mm !important;
+        margin: 0 !important;
+        align-items: flex-end !important;
+    }
+
+    .acta-docs .signature-img {
+        max-height: 12mm !important;
+        max-width: 100% !important;
+        object-fit: contain !important;
+    }
+
+    .acta-docs .line-black {
+        width: 100% !important;
+        margin: 0 !important;
+        border-top: 1px solid #000 !important;
+    }
+
+    .acta-docs .signature-name {
+        min-height: 4mm !important;
+        padding-top: 1mm !important;
+        font-size: 8.5pt !important;
+        line-height: 1.1 !important;
+        text-align: center !important;
+    }
+
+    .acta-docs .signature-caption,
+    .acta-docs #hoja1 .acta-signature-container > p:last-child {
+        margin: 0 !important;
+        font-size: 9pt !important;
+        line-height: 1.1 !important;
+        text-align: center !important;
+    }
+
+    .acta-docs .director-signature {
+        margin-top: 7mm !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .acta-docs .director-signature-line {
+        width: 78mm !important;
+    }
+
+    .acta-docs .page-watermark {
+        display: block !important;
+        width: 70% !important;
+        opacity: 0.07 !important;
+    }
+
+    .acta-docs .evidence-card,
+    .acta-docs .annex-location {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 }
 

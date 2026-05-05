@@ -88,101 +88,109 @@ const ActaHechosView = {
                                 Previsualizar en Otra Pantalla
                             </button>
                             <button id="btn-print" onclick="ActaHechosView.printActa()" class="w-full sm:w-[360px] bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 transition-all flex items-center justify-center gap-3 text-base uppercase tracking-widest hidden">
-                                Imprimir Acta de Hechos
+                                Descargar PDF
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <div id="preview-container" class="hidden acta-docs">
-                    <div id="hoja1" class="print-page text-[11pt]">
+                    <div id="hoja1" class="print-page">
                         <img class="page-watermark" src="${logoUrl}" alt="Marca de agua GEN">
                         <div class="print-header">
                             <img src="${logoUrl}" alt="Logo GEN">
                         </div>
-                        <div class="text-center font-bold text-[15pt] mb-10 tracking-[0.25em]">ACTA DE HECHOS</div>
+                        <div class="acta-title">ACTA DE HECHOS</div>
 
-                        <p class="text-justificado mb-6 leading-relaxed">
-                            En las instalaciones de la empresa <strong>GAS EXPRESS NIETO, SA DE CV</strong> siendo el dia <span id="print-fecha" class="font-bold border-b border-black px-1"></span>, se levanta la presente con la finalidad de hacer de su conocimiento que derivado de haber incurrido en algun acontecimiento que afecte el orden de la empresa.
+                        <p class="acta-intro text-justificado">
+                            En las instalaciones de la empresa <strong>GAS EXPRESS NIETO, SA DE CV</strong> siendo el dia <span id="print-fecha" class="acta-date"></span>, se levanta la presente con la finalidad de hacer de su conocimiento que derivado de haber incurrido en algun acontecimiento que afecte el orden de la empresa.
                         </p>
 
-                        <div class="mb-8">
-                            <span class="font-bold">SUPERVISOR REDACTA</span>
-                            <div id="print-hechos" class="inline border-b border-black text-justificado italic font-bold min-h-[1.2em]"></div>
-                            <div class="border-b border-black w-full h-1 mt-1"></div>
-                            <div class="border-b border-black w-full h-1 mt-4"></div>
+                        <div class="acta-text-block">
+                            <span class="acta-text-block-title">SUPERVISOR REDACTA</span>
+                            <div id="print-hechos" class="acta-written-text"></div>
+                            <div class="acta-writing-lines">
+                                <span></span>
+                                <span></span>
+                            </div>
                         </div>
 
-                        <div class="mb-10">
-                            <p class="font-bold mb-1">TRABAJADOR REDACTA:</p>
-                            <div id="print-trabajador" class="text-justificado italic font-bold leading-6"></div>
-                            <div class="border-b border-black w-full h-1 mt-4"></div>
-                            <div class="border-b border-black w-full h-1 mt-4"></div>
-                            <div class="border-b border-black w-full h-1 mt-4"></div>
+                        <div class="acta-text-block">
+                            <span class="acta-text-block-title">TRABAJADOR REDACTA:</span>
+                            <div id="print-trabajador" class="acta-written-text"></div>
+                            <div class="acta-writing-lines">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mt-12">
-                            <div class="space-y-20">
+                        <div class="signature-grid">
+                            <div class="signature-group">
                                 <div class="acta-signature-container">
-                                    <p class="font-bold mb-14 uppercase text-[10pt]">ENTERADO (A)</p>
+                                    <p class="signature-label">ENTERADO (A)</p>
                                     <div class="signature-slot">
                                         <img id="img-canv-enterado" class="signature-img" alt="Firma enterado (a)" style="visibility:hidden;">
                                     </div>
                                     <div class="line-black"></div>
-                                    <div id="out-name-enterado" class="text-[9pt] font-bold uppercase min-h-[1.2em] py-1 text-center w-full"></div>
-                                    <p class="font-bold text-[10pt] text-center">NOMBRE Y FIRMA</p>
+                                    <div id="out-name-enterado" class="signature-name"></div>
+                                    <p class="signature-caption">NOMBRE Y FIRMA</p>
+                                </div>
 
-                                    <p class="font-bold mt-20 mb-14 uppercase text-[10pt]">TESTIGO</p>
+                                <div class="acta-signature-container">
+                                    <p class="signature-label">TESTIGO</p>
                                     <div class="signature-slot">
                                         <img id="img-canv-testigo1" class="signature-img" alt="Firma testigo 1" style="visibility:hidden;">
                                     </div>
                                     <div class="line-black"></div>
-                                    <div id="out-name-testigo1" class="text-[9pt] font-bold uppercase min-h-[1.2em] py-1 text-center w-full"></div>
-                                    <p class="font-bold text-[10pt] text-center">NOMBRE Y FIRMA</p>
+                                    <div id="out-name-testigo1" class="signature-name"></div>
+                                    <p class="signature-caption">NOMBRE Y FIRMA</p>
                                 </div>
                             </div>
 
-                            <div class="space-y-20">
+                            <div class="signature-group">
                                 <div class="acta-signature-container">
-                                    <p class="font-bold mb-14 uppercase text-[10pt]">SUPERVISOR</p>
+                                    <p class="signature-label">SUPERVISOR</p>
                                     <div class="signature-slot">
                                         <img id="img-canv-levanta" class="signature-img" alt="Firma supervisor" style="visibility:hidden;">
                                     </div>
                                     <div class="line-black"></div>
-                                    <div id="out-name-levanta" class="text-[9pt] font-bold uppercase min-h-[1.2em] py-1 text-center w-full"></div>
-                                    <p class="font-bold text-[10pt] text-center">NOMBRE Y FIRMA</p>
+                                    <div id="out-name-levanta" class="signature-name"></div>
+                                    <p class="signature-caption">NOMBRE Y FIRMA</p>
+                                </div>
 
-                                    <p class="font-bold mt-20 mb-14 uppercase text-[10pt]">TESTIGO</p>
+                                <div class="acta-signature-container">
+                                    <p class="signature-label">TESTIGO</p>
                                     <div class="signature-slot">
                                         <img id="img-canv-testigo2" class="signature-img" alt="Firma testigo 2" style="visibility:hidden;">
                                     </div>
                                     <div class="line-black"></div>
-                                    <div id="out-name-testigo2" class="text-[9pt] font-bold uppercase min-h-[1.2em] py-1 text-center w-full"></div>
-                                    <p class="font-bold text-[10pt] text-center">NOMBRE Y FIRMA</p>
+                                    <div id="out-name-testigo2" class="signature-name"></div>
+                                    <p class="signature-caption">NOMBRE Y FIRMA</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-20 flex flex-col items-center text-center">
-                            <div class="w-80 border-t border-black mb-1"></div>
-                            <p class="font-bold text-[10pt] uppercase">Ing. EDUARDO MARTIN PRIETO MICHEL</p>
-                            <p class="text-[10pt] uppercase">GERENTE GENERAL</p>
+                        <div class="director-signature">
+                            <div class="director-signature-line"></div>
+                            <p><strong>Ing. EDUARDO MARTIN PRIETO MICHEL</strong></p>
+                            <p>GERENTE GENERAL</p>
                         </div>
                     </div>
 
-                    <div id="hoja2" class="print-page page-break annex-page text-[11pt]">
+                    <div id="hoja2" class="print-page page-break annex-page">
                         <img class="page-watermark" src="${logoUrl}" alt="Marca de agua GEN">
                         <div class="print-header">
                             <img src="${logoUrl}" alt="Logo GEN">
                         </div>
-                        <div class="annex-title text-center font-bold text-[15pt] mb-8 underline uppercase tracking-widest">Anexo de Evidencia</div>
+                        <div class="annex-title">Anexo de Evidencia</div>
 
-                        <div class="annex-location mb-6 p-4 border-2 border-dashed border-gray-300 rounded">
-                            <span class="font-bold uppercase text-[9pt] text-gray-400">Domicilio del Evento:</span>
-                            <p id="print-ubicacion-txt" class="text-lg font-bold text-black mt-1 italic"></p>
+                        <div class="annex-location">
+                            <span>Domicilio del Evento:</span>
+                            <p id="print-ubicacion-txt"></p>
                         </div>
 
-                        <div id="print-photos-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                        <div id="print-photos-grid"></div>
                     </div>
                 </div>
             </div>
@@ -366,12 +374,93 @@ const ActaHechosView = {
         });
     },
 
-    openPdfPreviewWindow(autoPrint) {
+    buildPdfMarkup() {
         const hoja1 = document.getElementById('hoja1');
         const hoja2 = document.getElementById('hoja2');
-        if (!hoja1 || !hoja2) return;
+        if (!hoja1 || !hoja2) return '';
 
-        const previewMarkup = `${hoja1.outerHTML}${hoja2.outerHTML}`;
+        const photosGrid = hoja2.querySelector('#print-photos-grid');
+        const hasEvidencePhotos = !!photosGrid && photosGrid.children.length > 0;
+        return hasEvidencePhotos ? `${hoja1.outerHTML}${hoja2.outerHTML}` : hoja1.outerHTML;
+    },
+
+    getPdfFileName() {
+        const fecha = document.getElementById('input-fecha')?.value || new Date().toISOString().split('T')[0];
+        return `Acta_de_Hechos_${fecha}.pdf`;
+    },
+
+    waitForImages(container) {
+        const images = Array.from(container.querySelectorAll('img')).filter((img) => !img.complete);
+        if (!images.length) return Promise.resolve();
+
+        return Promise.all(images.map((img) => new Promise((resolve) => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+        })));
+    },
+
+    getJsPdfConstructor() {
+        return window.jspdf?.jsPDF || window.jsPDF || null;
+    },
+
+    async downloadPdf() {
+        const JsPdf = this.getJsPdfConstructor();
+        if (typeof html2canvas === 'undefined' || !JsPdf) {
+            alert('No se pudo cargar la libreria para generar el PDF. Revisa tu conexion e intenta de nuevo.');
+            return;
+        }
+
+        this.renderSignatures();
+
+        const markup = this.buildPdfMarkup();
+        if (!markup) return;
+
+        const exportContainer = document.createElement('div');
+        exportContainer.className = 'acta-docs acta-pdf-export';
+        exportContainer.innerHTML = markup;
+        document.body.appendChild(exportContainer);
+
+        try {
+            await this.waitForImages(exportContainer);
+            if (document.fonts?.ready) await document.fonts.ready;
+
+            const pages = Array.from(exportContainer.querySelectorAll('.print-page'));
+            const pdf = new JsPdf({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [215.9, 279.4],
+                compress: true
+            });
+
+            for (let index = 0; index < pages.length; index += 1) {
+                const page = pages[index];
+                const canvas = await html2canvas(page, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    allowTaint: true,
+                    scrollX: 0,
+                    scrollY: 0,
+                    width: page.offsetWidth,
+                    height: page.offsetHeight,
+                    windowWidth: page.offsetWidth,
+                    windowHeight: page.offsetHeight
+                });
+
+                if (index > 0) pdf.addPage([215.9, 279.4], 'portrait');
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 215.9, 279.4);
+            }
+
+            pdf.save(this.getPdfFileName());
+        } finally {
+            exportContainer.remove();
+        }
+    },
+
+    openPdfPreviewWindow(autoPrint) {
+        const previewMarkup = this.buildPdfMarkup();
+        if (!previewMarkup) return;
+
         const previewWindow = window.open('', '_blank');
         if (!previewWindow) {
             alert('El navegador bloqueo la ventana de previsualizacion. Habilita ventanas emergentes para continuar.');
@@ -385,7 +474,6 @@ const ActaHechosView = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="${window.location.href}">
     <title>Previsualizacion PDF - Acta de Hechos</title>
-    <script src="https://cdn.tailwindcss.com"><\/script>
     <link rel="stylesheet" href="css/acta-hechos.css">
     <style>
         body {
@@ -437,12 +525,23 @@ const ActaHechosView = {
 </head>
 <body>
     <div class="preview-actions">
-        <button class="btn-print" onclick="window.print()">Imprimir / Guardar PDF</button>
+        <button class="btn-print" onclick="window.opener.ActaHechosView.downloadPdf()">Descargar PDF</button>
         <button class="btn-close" onclick="window.close()">Cerrar</button>
     </div>
     <div id="preview-shell" class="acta-docs">${previewMarkup}</div>
     <script>
-        ${autoPrint ? "window.addEventListener('load', () => setTimeout(() => window.print(), 350));" : ''}
+        function waitForPreviewAssets() {
+            var images = Array.from(document.images).filter(function (img) { return !img.complete; });
+            var imagePromises = images.map(function (img) {
+                return new Promise(function (resolve) {
+                    img.addEventListener('load', resolve, { once: true });
+                    img.addEventListener('error', resolve, { once: true });
+                });
+            });
+            var fontPromise = document.fonts ? document.fonts.ready : Promise.resolve();
+            return Promise.all([fontPromise].concat(imagePromises));
+        }
+        ${autoPrint ? "window.addEventListener('load', function () { waitForPreviewAssets().then(function () { setTimeout(function () { window.opener.ActaHechosView.downloadPdf(); }, 250); }); });" : ''}
     <\/script>
 </body>
 </html>`;
@@ -460,8 +559,7 @@ const ActaHechosView = {
     },
 
     printActa() {
-        this.renderSignatures();
-        this.openPdfPreviewWindow(true);
+        this.downloadPdf();
     }
 };
 
