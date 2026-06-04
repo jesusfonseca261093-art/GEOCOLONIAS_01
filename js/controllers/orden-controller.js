@@ -197,12 +197,6 @@ const OrdenController = {
                 const text = `🚨 *NUEVA ORDEN DE SERVICIO*\n\nFolio: ${orden.folio}\nUnidad: ${orden.unidad}\nOperador: ${orden.operador}\n\n*Falla Reportada:*\n${orden.descripcionFalla}`;
                 const url = `https://wa.me/${numeroSupervisor}?text=${encodeURIComponent(text)}`;
                 window.open(url, '_blank');
-                const numeroSupervisor = "524271492461"; 
-                const text = `🚨 *NUEVA ORDEN DE SERVICIO*\n\nFolio: ${orden.folio}\nUnidad: ${orden.unidad}\nOperador: ${orden.operador}\n\n*Falla Reportada:*\n${orden.descripcionFalla}`;
-                const url = `https://wa.me/${numeroSupervisor}?text=${encodeURIComponent(text)}`;
-                window.open(url, '_blank');
-
-
 
                 App.goToStep('orden-success');
             } else {

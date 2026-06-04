@@ -1130,3 +1130,40 @@ input[type="date"], input[type="month"], input[type="time"] {
         border-radius: 10px;
     }
 }
+
+/* Checklist de inspeccion: evitar texto partido en celular */
+@media (max-width: 640px) {
+    .inspection-point-card {
+        padding: 14px !important;
+    }
+
+    .inspection-point-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .inspection-point-label {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+    }
+
+    .inspection-point-label span {
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        white-space: normal !important;
+    }
+
+    .inspection-actions {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        justify-content: stretch !important;
+    }
+
+    .inspection-actions button {
+        flex: 1 1 0 !important;
+        padding: 10px 8px !important;
+        font-size: 13px !important;
+        text-align: center !important;
+    }
+}
