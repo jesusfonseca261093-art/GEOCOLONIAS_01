@@ -104,7 +104,7 @@ const HomeView = {
         });
     },
     
-    // Actualizar estadÃ­sticas del dÃ­a
+    // Actualizar estadi­sticas del di­a
     async updateStats() {
         try {
             const reports = await StorageService.loadReports();

@@ -147,23 +147,23 @@ const FormView = {
                                     
                                     // Dibujar la pregunta normal si no es encabezado
                                     return `
-                                    <div style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                                            <div style="flex: 1; min-width: 0;">
-                                                <span style="font-weight: bold; line-height: 1.3; display: block; word-wrap: break-word;">${point.label}</span>
+                                    <div class="inspection-point-card" style="margin-bottom: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                                        <div class="inspection-point-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                                            <div class="inspection-point-label" style="flex: 1 1 220px; min-width: 0;">
+                                                <span style="font-weight: bold; line-height: 1.35; display: block; overflow-wrap: normal; word-break: normal;">${point.label}</span>
                                                 ${point.critical ? '<span style="font-size: 10px; color: #dc2626; font-weight: bold; display: inline-block; margin-top: 4px;">(CRÍTICO)</span>' : ''}
                                             </div>
-                                            <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                                            <div class="inspection-actions" style="display: flex; gap: 8px; flex: 1 1 260px; justify-content: flex-end; min-width: 0;">
                                                 <button type="button"
                                                         onclick="FormController.setEvaluation('${point.id}', 'aprobado', App.appState)"
-                                                        style="padding: 6px 12px; border: none; border-radius: 6px; 
+                                                        style="padding: 6px 12px; border: none; border-radius: 6px; flex: 1 1 120px; min-width: 0; white-space: nowrap;
                                                                background: ${appState.evaluations[point.id] === 'aprobado' ? '#22c55e' : '#f1f5f9'}; 
                                                                color: ${appState.evaluations[point.id] === 'aprobado' ? 'white' : '#64748b'};">
                                                     ✅ Aprobado
                                                 </button>
                                                 <button type="button"
                                                         onclick="FormController.setEvaluation('${point.id}', 'rechazado', App.appState)"
-                                                        style="padding: 6px 12px; border: none; border-radius: 6px; 
+                                                        style="padding: 6px 12px; border: none; border-radius: 6px; flex: 1 1 120px; min-width: 0; white-space: nowrap;
                                                                background: ${appState.evaluations[point.id] === 'rechazado' ? '#dc2626' : '#f1f5f9'}; 
                                                                color: ${appState.evaluations[point.id] === 'rechazado' ? 'white' : '#64748b'};">
                                                     ❌ Rechazado
