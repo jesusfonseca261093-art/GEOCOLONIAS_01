@@ -23,21 +23,14 @@ const ChecklistVerificarView = {
         // Aprovechamos la función de AdminView para generar el formato
         let html = AdminView.renderReportDetails(draftReport);
 
-        // Reemplazamos los botones originales (Cerrar / Descargar PDF) por los de Verificación
-        html = html.replace(
-            /<div style="display: flex; gap: 10px; margin-top: 20px;">[\s\S]*?<\/div>/,
-            `<div style="display: flex; gap: 10px; margin-top: 20px; position: sticky; bottom: 0; background: white; padding: 15px 0; border-top: 1px solid #e2e8f0; z-index: 100;">
-                <button type="button" onclick="App.goToStep('form')" class="btn btn-secondary" style="flex: 1; font-size: 15px;">
-                    📝 Volver a editar
-                </button>
-                <button type="button" onclick="FormController.submitFromPreview(App.appState)" class="btn btn-success" style="flex: 1; font-size: 15px;" id="btnSubmitPreview">
-                    ✅ Confirmar y Guardar
-                </button>
-            </div>`
-        );
-
         return `
             <div>
+                <style>
+                    /* Ocultar botones originales del reporte (Cerrar / Descargar) */
+                    #preview-container-wrapper button {
+                        display: none !important;
+                    }
+                </style>
                 <!-- Header -->
                 <div class="header" style="background: #1e40af; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 12px 16px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -49,8 +42,18 @@ const ChecklistVerificarView = {
                 </div>
                 
                 <!-- Contenido de Previsualización -->
-                <div style="background: #f1f5f9; min-height: 100vh; padding-top: 10px;">
+                <div id="preview-container-wrapper" style="background: #f1f5f9; min-height: 100vh; padding-top: 10px; padding-bottom: 90px;">
                     ${html}
+                </div>
+
+                <!-- Botones fijos inferiores de verificación -->
+                <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px 20px; border-top: 1px solid #e2e8f0; display: flex; gap: 15px; z-index: 9999; box-shadow: 0 -4px 10px rgba(0,0,0,0.05);">
+                    <button type="button" onclick="App.goToStep('form')" class="btn btn-secondary" style="flex: 1; margin: 0; font-size: 15px; font-weight: bold; border-radius: 8px; padding: 12px;">
+                        📝 Editar
+                    </button>
+                    <button type="button" onclick="FormController.submitFromPreview(App.appState)" class="btn btn-success" id="btnSubmitPreview" style="flex: 1; margin: 0; font-size: 15px; font-weight: bold; background: #10b981; color: white; border: none; border-radius: 8px; padding: 12px;">
+                        ✅ Guardar
+                    </button>
                 </div>
             </div>
         `;

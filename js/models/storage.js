@@ -167,10 +167,47 @@ const StorageService = {
         }
     },
 
-  // storage.js - Agregar después de updateOrdenStatus
+    // Guardar supervisión en Supabase (Convirtiendo fotos a URLs)
+    async saveSupervision(supervision) {
+        const client = this.init();
+        if (!client) return false;
 
-// Actualizar orden (para trabajo realizado)
-async updateOrden(id, updates) {
+        try {
+            // 1. Subir fotos de evidencia si existen
+            if (supervision.evidenciasFotos && supervision.evidenciasFotos.length > 0) {
+                for (let i = 0; i < supervision.evidenciasFotos.length; i++) {
+                    const foto = supervision.evidenciasFotos[i];
+                    if (foto.data && foto.data.startsWith('data:')) {
+                        const url = await this.uploadImage(`supervisiones/${supervision.id}/foto_${i}.jpg`, foto.data);
+                        if (url) foto.data = url; // Reemplazar la data pesada por la URL en la nube
+                    }
+                }
+            }
+            
+            // 2. Subir firma del supervisor
+            if (supervision.firmaSupervisor && supervision.firmaSupervisor.startsWith('data:')) {
+                const url = await this.uploadImage(`supervisiones/${supervision.id}/firma.png`, supervision.firmaSupervisor);
+                if (url) supervision.firmaSupervisor = url;
+            }
+
+            // 3. Guardar el JSON en la tabla
+            const { error } = await client
+                .from('supervisiones')
+                .insert({ id: supervision.id, content: supervision });
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error al guardar supervisión:", error);
+            if (error.message && error.message.includes("row-level security")) {
+                alert("⛔ Error de Permisos en Supabase:\n\nFaltan las 'Policies' (Políticas de Seguridad) en la tabla 'supervisiones'. Debes permitirlas desde el editor SQL de Supabase.");
+            }
+            return false;
+        }
+    },
+
+    // Actualizar orden (para trabajo realizado y cambio de estatus)
+    async updateOrden(id, updates) {
     const client = this.init();
     if (!client) {
         // Fallback a localStorage
@@ -220,7 +257,14 @@ async updateOrden(id, updates) {
                 .order('created_at', { ascending: false });
                 
             if (error) throw error;
-            return data.map(row => row.content);
+            return (data || []).map(row => {
+                let content = row.content;
+                if (!content && row.id) content = row;
+                if (typeof content === 'string') {
+                    try { content = JSON.parse(content); } catch(e) {}
+                }
+                return content || {};
+            }).filter(item => item && Object.keys(item).length > 0);
         } catch (error) {
             console.error("Error al cargar reportes de Supabase:", error);
             return [];
@@ -239,9 +283,41 @@ async updateOrden(id, updates) {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            return data.map(row => row.content);
+            return (data || []).map(row => {
+                let content = row.content;
+                if (!content && row.id) content = row;
+                if (typeof content === 'string') {
+                    try { content = JSON.parse(content); } catch(e) {}
+                }
+                return content || {};
+            }).filter(item => item && Object.keys(item).length > 0);
         } catch (error) {
             console.error("Error al cargar órdenes de Supabase:", error);
+            return [];
+        }
+    },
+    
+    // Cargar Supervisiones
+    async loadSupervisiones() {
+        const client = this.init();
+        if (!client) return [];
+
+        try {
+            const { data, error } = await client
+                .from('supervisiones')
+                .select('content')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data || []).map(row => {
+                let content = row.content;
+                if (!content && row.id) content = row;
+                if (typeof content === 'string') {
+                    try { content = JSON.parse(content); } catch(e) {}
+                }
+                return content || {};
+            }).filter(item => item && Object.keys(item).length > 0);
+        } catch (error) {
+            console.error("Error al cargar supervisiones:", error);
             return [];
         }
     },
@@ -260,52 +336,115 @@ async updateOrden(id, updates) {
         if (!client) return;
         await client.from('ordenes').delete().neq('id', '0');
     },
+
+    // Eliminar todas las supervisiones
+    async clearSupervisiones() {
+        const client = this.init();
+        if (!client) return;
+        await client.from('supervisiones').delete().neq('id', '0');
+    },
     
+    // Eliminar un reporte individual (pruebas)
+    async deleteReport(id) {
+        const client = this.init();
+        if (!client) return false;
+        const { error } = await client.from('reportes').delete().eq('id', id);
+        return !error;
+    },
+    
+    // Eliminar una orden individual (pruebas)
+    async deleteOrden(id) {
+        const client = this.init();
+        if (!client) return false;
+        const { error } = await client.from('ordenes').delete().eq('id', id);
+        return !error;
+    },
+
+    // Eliminar una supervisión individual (pruebas)
+    async deleteSupervision(id) {
+        const client = this.init();
+        if (!client) return false;
+        const { error } = await client.from('supervisiones').delete().eq('id', id);
+        return !error;
+    },
+
     // Exportar a CSV
     exportToCSV(data, type) {
         let csv = '';
         
         if (type === 'checklists') {
-            csv = 'Fecha,Hora,Operador,Economico,KM,Ruta,Estado,Observaciones\n';
+            let allPoints = [];
+            if (window.CONFIG) {
+                allPoints = [
+                    ...(window.CONFIG.INSPECTION_POINTS_NORMAL || []),
+                    ...(window.CONFIG.INSPECTION_POINTS_AUTOTANQUE || []),
+                    ...(window.CONFIG.INSPECTION_POINTS_UTILITARIO || [])
+                ].filter(p => !p.isHeader);
+            }
+            
+            let uniquePoints = [];
+            let seenIds = new Set();
+            allPoints.forEach(p => {
+                if (!seenIds.has(p.id)) {
+                    seenIds.add(p.id);
+                    uniquePoints.push(p);
+                }
+            });
+
+            let header = ['Fecha', 'Hora', 'Operador', 'Economico', 'Tipo_Ruta', 'Ruta', 'KM', 'Estado', 'Observaciones'];
+            uniquePoints.forEach(p => header.push(`"${p.label.replace(/"/g, '""')}"`));
+            csv = header.join(',') + '\n';
             
             data.forEach(report => {
                 const evaluaciones = report.evaluaciones || {};
                 const rechazados = Object.values(evaluaciones).filter(e => e === 'rechazado').length;
                 const estado = rechazados > 0 ? 'Con fallas' : 'Aprobado';
                 
-                const row = [
-                    `"${report.fecha}"`,
-                    `"${report.hora}"`,
-                    `"${report.operador.replace(/"/g, '""')}"`,
-                    `"${report.ecoUnidad}"`,
-                    report.km,
-                    `"${report.ruta}"`,
+                let row = [
+                    `"${report.fecha || ''}"`,
+                    `"${report.hora || ''}"`,
+                    `"${(report.operador || '').replace(/"/g, '""')}"`,
+                    `"${report.ecoUnidad || ''}"`,
+                    `"${report.tipoRuta || 'Utilitario'}"`,
+                    `"${report.ruta || ''}"`,
+                    report.km || 0,
                     `"${estado}"`,
                     `"${(report.observaciones || '').replace(/"/g, '""')}"`
-                ].join(',');
+                ];
                 
-                csv += row + '\n';
+                uniquePoints.forEach(p => {
+                    let val = evaluaciones[p.id];
+                    let strVal = val === 'aprobado' ? 'Cumple' : (val === 'rechazado' ? 'No Cumple' : 'N/A');
+                    row.push(`"${strVal}"`);
+                });
+                
+                csv += row.join(',') + '\n';
             });
             
         } else {
-            csv = 'Folio,Fecha,Hora,Unidad,Operador,KM,Tipo,Lugar,Estado,Falla,Puntos_Criticos\n';
+            let header = ['Folio', 'Fecha', 'Hora_Reporte', 'Hora_Termino', 'Tiempo_Muerto', 'Unidad', 'Operador', 'KM', 'Lugar_Mantenimiento', 'Tipo_Mantenimiento', 'Estado', 'Falla_Reportada', 'Trabajo_Realizado', 'Puntos_Criticos_Revisados', 'Observaciones'];
+            csv = header.join(',') + '\n';
             
             data.forEach(orden => {
-                const row = [
-                    `"${orden.folio}"`,
-                    `"${orden.fecha}"`,
-                    `"${orden.hora}"`,
-                    `"${orden.unidad}"`,
-                    `"${orden.operador.replace(/"/g, '""')}"`,
-                    orden.kilometro,
-                    `"${orden.tipoMantenimiento === 'correctivo' ? 'Correctivo' : orden.tipoMantenimiento === 'preventivo' ? 'Preventivo' : 'Otras'}"`,
+                let row = [
+                    `"${orden.folio || ''}"`,
+                    `"${orden.fecha || ''}"`,
+                    `"${orden.horaReporte || ''}"`,
+                    `"${orden.horaTermino || ''}"`,
+                    `"${orden.tiempoMuerto || ''}"`,
+                    `"${orden.unidad || ''}"`,
+                    `"${(orden.operador || '').replace(/"/g, '""')}"`,
+                    orden.kilometro || 0,
                     `"${orden.mantenimientoLugar === 'taller' ? 'Taller' : 'Ruta'}"`,
-                    `"${orden.estado}"`,
-                    `"${(orden.descripcionFalla || '').replace(/"/g, '""').substring(0, 100)}"`,
-                    `"${(orden.puntosCriticos || []).join('; ')}"`
-                ].join(',');
+                    `"${orden.tipoMantenimiento || ''}"`,
+                    `"${orden.estado || ''}"`,
+                    `"${(orden.descripcionFalla || '').replace(/"/g, '""')}"`,
+                    `"${(orden.trabajoRealizado || '').replace(/"/g, '""')}"`,
+                    `"${(orden.puntosCriticos || []).join('; ')}"`,
+                    `"${(orden.observaciones || '').replace(/"/g, '""')}"`
+                ];
                 
-                csv += row + '\n';
+                csv += row.join(',') + '\n';
             });
         }
         
@@ -325,6 +464,62 @@ async updateOrden(id, updates) {
             console.error("Error reseteando contraseña:", error);
             throw new Error(error.message || "No se pudo actualizar. Verifica tus permisos.");
         }
+        
+        return true;
+    },
+
+    // Guardar cambios en la geometría de una geocerca
+    async updateRouteGeometry(routeName, geometryGeoJson) {
+        const client = this.init();
+        if (!client) throw new Error("Supabase no conectado");
+
+        // Llamamos a la función corregida en Supabase que tiene permisos de administrador (SECURITY DEFINER)
+        const { error } = await client.rpc('actualizar_geocerca_geometria', {
+            p_nombre_ruta: routeName,
+            p_geometry_geojson: JSON.stringify(geometryGeoJson)
+        });
+
+        if (error) {
+            console.error("Error actualizando geometría:", error);
+            throw new Error(error.message || "No se pudo actualizar la forma de la ruta.");
+        }
+        
+        return true;
+    },
+
+    // Crear NUEVA geocerca en la BD
+    async createRouteGeometry(routeName, supervisorName, geometryGeoJson) {
+        const client = this.init();
+        if (!client) throw new Error("Supabase no conectado");
+
+        const { error } = await client.rpc('crear_geocerca', {
+            p_nombre_ruta: routeName,
+            p_supervisor: supervisorName,
+            p_geometry_geojson: JSON.stringify(geometryGeoJson)
+        });
+
+        if (error) {
+            console.error("Error creando geometría:", error);
+            throw new Error(error.message || "No se pudo guardar la nueva ruta. Verifica tus permisos.");
+        }
+        
+        return true;
+    },
+
+    // Eliminar geocerca de la BD
+    async deleteRoute(routeName) {
+        const client = this.init();
+        if (!client) throw new Error("Supabase no conectado");
+
+        // Usamos una función RPC para evitar bloqueos de seguridad (RLS) al borrar
+        const { data, error } = await client.rpc('eliminar_geocerca', {
+            p_nombre_ruta: routeName
+        });
+
+        if (error) throw new Error(error.message || "No se pudo eliminar la ruta.");
+        
+        // Detectar si el borrado fue un "Fallo silencioso" (0 filas afectadas)
+        if (data === false) throw new Error(`Fallo Silencioso: No se encontró la ruta "${routeName}" en la base de datos.`);
         
         return true;
     }

@@ -3,6 +3,8 @@
 const MapaQuejasView = {
     map: null,
     markers: [],
+    allGeocercas: null,
+    currentGeocercaLayer: null,
     
     render() {
         return `
@@ -64,8 +66,43 @@ const MapaQuejasView = {
             attribution: '© OpenStreetMap contributors'
         }).addTo(this.map);
         
+        // Evento para limpiar la geocerca cuando se cierra la ventana de información
+        this.map.on('popupclose', () => {
+            if (this.currentGeocercaLayer) {
+                this.map.removeLayer(this.currentGeocercaLayer);
+                this.currentGeocercaLayer = null;
+            }
+        });
+        
+        // Cargar geocercas de fondo para cálculos matemáticos
+        this.cargarGeocercasSilencioso();
+        
         // Cargar supervisiones
         await this.cargarSupervisiones();
+    },
+    
+    // Carga las geocercas en segundo plano para no alentar el mapa
+    async cargarGeocercasSilencioso() {
+        try {
+            const client = StorageService.init();
+            if (!client) return;
+            const { data } = await client.rpc('obtener_geocercas_geojson');
+            let parsed = data;
+            
+            // Parseo defensivo por si Supabase lo devuelve como texto
+            if (typeof parsed === 'string') {
+                try { parsed = JSON.parse(parsed); } catch(e) {}
+            }
+            if (Array.isArray(parsed) && parsed.length > 0) parsed = parsed[0];
+            if (parsed && parsed.obtener_geocercas_geojson) parsed = parsed.obtener_geocercas_geojson;
+            if (parsed && typeof parsed.features === 'string') {
+                try { parsed.features = JSON.parse(parsed.features); } catch(e) {}
+            }
+            
+            this.allGeocercas = parsed?.features || [];
+        } catch (e) {
+            console.warn("Geocercas de fondo no disponibles:", e);
+        }
     },
     
     // Cargar supervisiones y crear marcadores
@@ -76,22 +113,81 @@ const MapaQuejasView = {
             this.markers = [];
         }
         
-        // Cargar supervisiones desde localStorage
-        const supervisiones = JSON.parse(localStorage.getItem('supervisiones') || '[]');
+        // Cargar supervisiones desde Supabase
+        const supervisiones = await StorageService.loadSupervisiones();
         console.log('Supervisiones cargadas:', supervisiones.length);
         
+        // 🛡️ Integración de Filtros Inteligentes del Panel Principal
+        let filteredSupervisiones = supervisiones.filter(sup => {
+            // 2. Filtro de Fechas
+            let itemYear, itemMonth, itemDay;
+            if (sup.timestamp) {
+                const fecha = new Date(sup.timestamp);
+                itemYear = fecha.getFullYear(); itemMonth = fecha.getMonth() + 1; itemDay = fecha.getDate();
+            } else if (typeof sup.fecha === 'string') {
+                if (sup.fecha.includes('/')) {
+                    const [dia, mes, año] = sup.fecha.split('/').map(Number);
+                    itemYear = año; itemMonth = mes; itemDay = dia;
+                } else if (sup.fecha.includes('-')) {
+                    const [año, mes, dia] = sup.fecha.split('-').map(Number);
+                    itemYear = año; itemMonth = mes; itemDay = dia;
+                }
+            }
+            
+            if (App.appState.filterMonth) {
+                const [year, month] = App.appState.filterMonth.split('-').map(Number);
+                if (itemYear !== year || itemMonth !== month) return false;
+            }
+            if (App.appState.filterDate) {
+                const [year, month, day] = App.appState.filterDate.split('-').map(Number);
+                if (itemYear !== year || itemMonth !== month || itemDay !== day) return false;
+            }
+            
+            // 3. Filtro de Búsqueda
+            if (App.appState.filterSearch) {
+                const s = App.appState.filterSearch.toLowerCase();
+                return (sup.nombreSupervisor?.toLowerCase().includes(s) || sup.nombreCliente?.toLowerCase().includes(s) || sup.motivoQueja?.toLowerCase().includes(s) || sup.ubicacion?.toLowerCase().includes(s));
+            }
+
+            // 4. Filtro de Tarjetas Estadísticas (Con Evidencia / Sin Evidencia)
+            if (App.appState.filterStatus && App.appState.filterStatus !== 'all') {
+                const conEvidencia = (sup.evidenciasFotos && sup.evidenciasFotos.length > 0) || sup.evidenciaFoto;
+                return App.appState.filterStatus === 'approved' ? conEvidencia : !conEvidencia;
+            }
+            
+            return true;
+        });
+
         let conCoordenadas = 0;
         
         // Crear marcadores para cada supervisión con coordenadas
-        supervisiones.forEach(sup => {
+        filteredSupervisiones.forEach(sup => {
             if (sup.coordenadas && sup.coordenadas.lat && sup.coordenadas.lng) {
                 conCoordenadas++;
                 
-                // Crear marcador
-                const marker = L.marker([sup.coordenadas.lat, sup.coordenadas.lng]).addTo(this.map);
+                const isTest = AdminController.isTestRecord(sup);
+                let marker;
+
+                if (isTest) {
+                    const testIcon = L.divIcon({
+                        className: 'custom-test-icon',
+                        html: "<div style='background-color:#a855f7; width:30px; height:30px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.4); font-size:16px;'>🧪</div>",
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15],
+                        popupAnchor: [0, -15]
+                    });
+                    marker = L.marker([sup.coordenadas.lat, sup.coordenadas.lng], { icon: testIcon }).addTo(this.map);
+                } else {
+                    marker = L.marker([sup.coordenadas.lat, sup.coordenadas.lng]).addTo(this.map);
+                }
                 
                 // Crear popup con información completa
                 marker.bindPopup(this.crearPopupContent(sup));
+                
+                // Al dar clic, buscar en qué geocerca está y dibujarla
+                marker.on('click', () => {
+                    this.mostrarGeocerca(sup.coordenadas.lat, sup.coordenadas.lng);
+                });
                 
                 this.markers.push(marker);
             }
@@ -112,11 +208,25 @@ const MapaQuejasView = {
     
     // Crear contenido del popup
     crearPopupContent(sup) {
+        const isTest = AdminController.isTestRecord(sup);
+        let fotoHtml = '';
+        if (sup.evidenciasFotos && sup.evidenciasFotos.length > 0) {
+            fotoHtml = `<img src="${sup.evidenciasFotos[0].data}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+        } else if (sup.evidenciaFoto) {
+            fotoHtml = `<img src="${sup.evidenciaFoto}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+        }
+
         return `
-            <div style="min-width: 250px; max-width: 300px;">
-                <h4 style="margin: 0 0 8px 0; color: #0867ec; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+            <div style="min-width: 250px; max-width: 300px; ${isTest ? 'background-color: #faf5ff; padding: 10px; border: 2px solid #d8b4fe; border-radius: 8px;' : ''}">
+                ${isTest ? `
+                <div style="background:#a855f7; color:white; text-align:center; font-size:12px; font-weight:bold; padding:6px; border-radius:4px; margin-bottom:10px;">
+                    🧪 REGISTRO DE PRUEBA
+                </div>` : ''}
+                <h4 style="margin: 0 0 8px 0; color: ${isTest ? '#9333ea' : '#0867ec'}; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
                     👨‍🔧 ${sup.nombreSupervisor || 'Sin supervisor'}
                 </h4>
+                
+                ${fotoHtml}
                 
                 <div style="font-size: 12px;">
                     <p style="margin: 5px 0;"><strong>📅 Fecha:</strong> ${sup.fecha || ''} ${sup.hora || ''}</p>
@@ -143,6 +253,11 @@ const MapaQuejasView = {
                             </a>
                         </div>
                     ` : ''}
+                    
+                    <button onclick="AdminController.viewSupervision('${sup.id}')" 
+                            style="width: 100%; background: #0867ec; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 12px; box-shadow: 0 2px 4px rgba(8, 103, 236, 0.3); transition: all 0.2s;">
+                        📄 Ver reporte completo
+                    </button>
                 </div>
             </div>
         `;
@@ -156,6 +271,54 @@ const MapaQuejasView = {
         }
     },
     
+    // Algoritmo para encontrar y dibujar la geocerca exacta
+    mostrarGeocerca(lat, lng) {
+        if (this.currentGeocercaLayer) {
+            this.map.removeLayer(this.currentGeocercaLayer);
+            this.currentGeocercaLayer = null;
+        }
+        if (!this.allGeocercas || this.allGeocercas.length === 0) return;
+        
+        const pt = [lng, lat]; // GeoJSON usa [Longitud, Latitud]
+        let foundFeature = null;
+        
+        for (let feature of this.allGeocercas) {
+            let geom = feature.geometry;
+            if (!geom) continue;
+            if (typeof geom === 'string') {
+                try { geom = JSON.parse(geom); } catch(e) { continue; }
+            }
+            
+            if (geom.type === 'Polygon') {
+                if (this.isPointInPolygon(pt, geom.coordinates[0])) { foundFeature = feature; break; }
+            } else if (geom.type === 'MultiPolygon') {
+                for (let poly of geom.coordinates) {
+                    if (this.isPointInPolygon(pt, poly[0])) { foundFeature = feature; break; }
+                }
+                if (foundFeature) break;
+            }
+        }
+        
+        if (foundFeature) {
+            this.currentGeocercaLayer = L.geoJSON(foundFeature, {
+                style: { color: '#ef4444', weight: 3, opacity: 0.8, fillColor: '#ef4444', fillOpacity: 0.15 }
+            }).bindTooltip(`<b>${foundFeature.properties?.name || 'Ruta'}</b><br>Supervisor: ${foundFeature.properties?.SUPERVISOR || 'N/A'}`, { sticky: true }).addTo(this.map);
+        }
+    },
+    
+    // Ray-casting algorithm: Verifica matemáticamente si una coordenada está dentro de un polígono
+    isPointInPolygon(point, vs) {
+        let x = point[0], y = point[1];
+        let inside = false;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            let xi = vs[i][0], yi = vs[i][1];
+            let xj = vs[j][0], yj = vs[j][1];
+            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    },
+
     // Actualizar mapa (recargar supervisiones)
     async actualizarMapa() {
         await this.cargarSupervisiones();

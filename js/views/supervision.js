@@ -154,7 +154,7 @@ const SupervisionView = {
                                         onclick="SupervisionController.obtenerUbicacionActual()"
                                         style="flex: 1; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 12px;">
                                     📍 Refrescar ubicación
-                            
+                                </button>
                             </div>
                         </div>
 

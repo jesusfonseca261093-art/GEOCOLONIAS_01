@@ -87,13 +87,25 @@ const OrdenController = {
             return;
         }
         
-        if (!CONFIG.OPERATORS.includes(appState.ordenData.operador)) {
-            alert("El Operador ingresado no es válido. Por favor selecciónalo de la lista sugerida.");
-            return;
+        // Validar respaldo de datos (Catálogos) flexiblemente
+        const isTestOp = appState.ordenData.operador.toLowerCase().includes('prueba');
+        if (!isTestOp && CONFIG.OPERATORS && CONFIG.OPERATORS.length > 0) {
+            const matchedOp = CONFIG.OPERATORS.find(op => op.trim().toUpperCase() === appState.ordenData.operador.trim().toUpperCase());
+            if (!matchedOp) {
+                alert("El Operador ingresado no es válido. Por favor selecciónalo de la lista sugerida.");
+                return;
+            }
+            appState.ordenData.operador = matchedOp;
         }
-        if (!CONFIG.UNITS.includes(appState.ordenData.unidad)) {
-            alert("La Unidad ingresada no es válida. Por favor selecciónala de la lista sugerida.");
-            return;
+        
+        const isTestUnit = appState.ordenData.unidad.toLowerCase().includes('prueba');
+        if (!isTestUnit && CONFIG.UNITS && CONFIG.UNITS.length > 0) {
+            const matchedUnit = CONFIG.UNITS.find(u => u.trim().toUpperCase() === appState.ordenData.unidad.trim().toUpperCase());
+            if (!matchedUnit) {
+                alert("La Unidad ingresada no es válida. Por favor selecciónala de la lista sugerida.");
+                return;
+            }
+            appState.ordenData.unidad = matchedUnit;
         }
         
         const operatorParts = appState.ordenData.operador.split(':');

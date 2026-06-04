@@ -6,14 +6,17 @@
     <title>Gen Checklist - Control de Unidades</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/componets.css">
-    <link rel="stylesheet" href="css/acta-hechos.css">
+    <link rel="stylesheet" href="css/acta-hechos.css?v=20260501-print-firmas">
 
     <!-- Leaflet CSS para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
+    
+    <!-- Leaflet Geoman CSS (Herramienta para editar geocercas) -->
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+    
     <!-- Leaflet Omnivore para leer archivos KML -->
-    <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
-
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js'></script>
+    
     <!-- Iconos modernos (Boxicons) -->
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
@@ -73,7 +76,9 @@
 
     <div id="app"></div>
 
-    <!-- Libreria para generar PDF -->
+    <!-- Librerias para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <!-- Libreria EmailJS -->
@@ -85,8 +90,11 @@
     <!--Libreria Chart.js para graficas-->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Leaflet JS para el mapa -->
+    <!-- Leaflet JS para el mapa (AGREGADO AQUÍ) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet Geoman JS (Herramienta para editar geocercas) -->
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
 
     <!-- 1. Modelos y Datos -->
     <script src="js/models/data.js"></script>
@@ -115,7 +123,7 @@
     <script src="js/views/geocercas.js"></script>
     <script src="js/views/supervision.js"></script>
     <script src="js/views/mapa-quejas.js"></script>
-    <script src="js/views/acta-hechos.js"></script>
+    <script src="js/views/acta-hechos.js?v=20260501-acta-pdf"></script>
 
     <!-- 5. Aplicacion Principal -->
     <script src="js/app.js"></script>
