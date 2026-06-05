@@ -29,13 +29,14 @@ const AuthController = {
             const userEmail = data.user?.email?.toLowerCase() || '';
             
             // Determinar rol por prefijo si no viene en metadata
-            if (userEmail.startsWith('admin')) role = 'admin';
+            if (userEmail === 'pedidosgen@gasen.mx') role = 'geocercas';
+            else if (userEmail.startsWith('admin')) role = 'admin';
             else if (userEmail.startsWith('cilindros')) role = 'cilindros';
             else if (userEmail.startsWith('autotanque')) role = 'autotanque';
             else if (userEmail.startsWith('estaciones')) role = 'estaciones';
             else if (!role) role = 'supervisor';
             
-            const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor'];
+            const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor', 'geocercas'];
             if (!validRoles.includes(role)) {
                 await client.auth.signOut(); // Cierra la sesión inmediatamente si no tiene rol válido
                 throw new Error(`Acceso denegado: Tu rol actual es '${role || 'NINGUNO'}'. No tienes permisos válidos.`);
@@ -68,13 +69,14 @@ const AuthController = {
                 let role = session.user?.user_metadata?.role;
                 const userEmail = session.user?.email?.toLowerCase() || '';
                 
-                if (userEmail.startsWith('admin')) role = 'admin';
+                if (userEmail === 'pedidosgen@gasen.mx') role = 'geocercas';
+                else if (userEmail.startsWith('admin')) role = 'admin';
                 else if (userEmail.startsWith('cilindros')) role = 'cilindros';
                 else if (userEmail.startsWith('autotanque')) role = 'autotanque';
                 else if (userEmail.startsWith('estaciones')) role = 'estaciones';
                 else if (!role) role = 'supervisor';
                 
-                const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor'];
+                const validRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor', 'geocercas'];
                 if (validRoles.includes(role)) {
                     App.appState.userRole = role;
                     App.appState.user = session.user;

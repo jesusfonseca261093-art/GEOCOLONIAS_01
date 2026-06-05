@@ -60,11 +60,35 @@ const App = {
         userRole: null,
         user: null
     },
-    
+
+    geocercasOnlyEmail: 'pedidosgen@gasen.mx',
+
+    isGeocercasOnlyUser() {
+        const email = this.appState.user?.email?.toLowerCase() || '';
+        return this.appState.userRole === 'geocercas' || email === this.geocercasOnlyEmail;
+    },
+
+    canAccessStep(step) {
+        if (!this.isGeocercasOnlyUser()) return true;
+        return ['login', 'home', 'geocercas'].includes(step);
+    },
+
+    updateGlobalNavigation() {
+        const onlyGeocercas = this.isGeocercasOnlyUser();
+        document.querySelectorAll('[data-nav-step]').forEach(link => {
+            const step = link.getAttribute('data-nav-step');
+            link.style.display = onlyGeocercas && step !== 'geocercas' ? 'none' : '';
+        });
+    },
+
     // Navegar a un paso específico (Navegación protegida)
     goToStep(step) {
         // --- CANDADO DE SEGURIDAD POR ROLES ---
         const role = this.appState.userRole;
+
+        if (!this.canAccessStep(step)) {
+            return alert("Acceso denegado: este usuario solo puede consultar Geocercas.");
+        }
         
         // Bloquear Paneles a cualquier rol que no sea admin
         if (step === 'admin-panel' || step === 'taller-panel' || step === 'geocercas-edicion') {
@@ -212,6 +236,8 @@ const App = {
         setTimeout(() => {
             this.initStepComponents();
         }, 50);
+
+        this.updateGlobalNavigation();
     },
     
     // Inicializar la aplicación

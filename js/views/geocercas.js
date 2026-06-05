@@ -637,6 +637,7 @@ const GeocercasView = {
                     });
                 } else {
                     const isAdmin = App.appState && ['admin', 'supervisor'].includes(App.appState.userRole);
+                    const onlyGeocercas = App.isGeocercasOnlyUser && App.isGeocercasOnlyUser();
                     
                     layer.bindPopup(`
                         <div style="max-height: 250px; overflow-y: auto;">
@@ -644,7 +645,7 @@ const GeocercasView = {
                             <div style="font-size:11px; color:#dc2626; font-weight:bold; margin-bottom: 8px;">👤 Supervisor: ${supervisorName}</div>
                             <div style="font-size:11px; font-weight:bold; color:#475569; margin-bottom: 3px;">📍 Colonias asignadas:</div>
                             <div style="font-size:11px; margin-bottom: 12px; color:#475569; line-height: 1.4;">${colonias || 'Sin colonias especificadas'}</div>
-                            <button onclick="App.goToStep('supervision-form')" class="btn btn-primary" style="padding: 8px; font-size: 11px; width: 100%; margin:0; margin-bottom: ${isAdmin ? '5px' : '0'};">Supervisar esta ruta</button>
+                            ${onlyGeocercas ? '' : `<button onclick="App.goToStep('supervision-form')" class="btn btn-primary" style="padding: 8px; font-size: 11px; width: 100%; margin:0; margin-bottom: ${isAdmin ? '5px' : '0'};">Supervisar esta ruta</button>`}
                             ${isAdmin ? `<button onclick="GeocercasView.reassignRoute('${safeName}', '${supervisorName}')" class="btn" style="background: #f59e0b; color: white; padding: 8px; font-size: 11px; width: 100%; margin:0;">✏️ Reasignar Supervisor</button>` : ''}
                         </div>
                     `);

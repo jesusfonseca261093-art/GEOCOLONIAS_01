@@ -2,6 +2,8 @@
 
 const HomeView = {
     render() {
+        const onlyGeocercas = typeof App !== 'undefined' && App.isGeocercasOnlyUser && App.isGeocercasOnlyUser();
+
         return `
             <div>
                 <!-- Header Moderno con Logo y MenÃº -->
@@ -24,46 +26,50 @@ const HomeView = {
                     </p>
                     
                     <div class="home-menu-grid">
-                        <button onclick="App.goToStep('form')" class="btn btn-primary">
-                            <i class='bx bx-list-check' style="font-size: 22px;"></i> Nuevo check list
-                        </button>
-                        
-                        <button onclick="App.goToStep('orden-servicio')" class="btn btn-warning">
-                            <i class='bx bx-wrench' style="font-size: 22px;"></i> Orden de servicio
-                        </button>
-                        
-                        <button onclick="App.goToStep('admin-panel')" class="btn" style="background: #0f172a; color: white;">
-                            <i class='bx bx-shield-quarter' style="font-size: 22px;"></i> Panel supervisor
-                        </button>
-                        
-                        <button onclick="App.goToStep('taller-panel')" class="btn" style="background: #334155; color: white;">
-                            <i class='bx bx-car' style="font-size: 22px;"></i> Panel taller
-                        </button>
+                        ${onlyGeocercas ? `
+                            <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
+                                <i class='bx bx-map-alt' style="font-size: 22px;"></i> Geocercas
+                            </button>
+                        ` : `
+                            <button onclick="App.goToStep('form')" class="btn btn-primary">
+                                <i class='bx bx-list-check' style="font-size: 22px;"></i> Nuevo check list
+                            </button>
+                            
+                            <button onclick="App.goToStep('orden-servicio')" class="btn btn-warning">
+                                <i class='bx bx-wrench' style="font-size: 22px;"></i> Orden de servicio
+                            </button>
+                            
+                            <button onclick="App.goToStep('admin-panel')" class="btn" style="background: #0f172a; color: white;">
+                                <i class='bx bx-shield-quarter' style="font-size: 22px;"></i> Panel supervisor
+                            </button>
+                            
+                            <button onclick="App.goToStep('taller-panel')" class="btn" style="background: #334155; color: white;">
+                                <i class='bx bx-car' style="font-size: 22px;"></i> Panel taller
+                            </button>
 
-                        <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
-                            <i class='bx bx-map-alt' style="font-size: 22px;"></i> Geocercas
-                        </button>
+                            <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
+                                <i class='bx bx-map-alt' style="font-size: 22px;"></i> Geocercas
+                            </button>
 
-                        <button onclick="App.goToStep('geocercas-edicion')" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white;">
-                            <i class='bx bx-edit-alt' style="font-size: 22px;"></i> EDICIÓN GEOCERCAS
-                        </button>
+                            <button onclick="App.goToStep('geocercas-edicion')" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white;">
+                                <i class='bx bx-edit-alt' style="font-size: 22px;"></i> EDICIÓN GEOCERCAS
+                            </button>
 
-                        <button onclick="App.goToStep('supervision-form')" class="btn" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white;">
-                            <i class='bx bx-user-pin' style="font-size: 22px;"></i> Supervisión en campo
-                        </button>       
+                            <button onclick="App.goToStep('supervision-form')" class="btn" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white;">
+                                <i class='bx bx-user-pin' style="font-size: 22px;"></i> Supervisión en campo
+                            </button>       
 
-                        <button onclick="App.goToStep('acta-hechos')" class="btn" style="background: linear-gradient(135deg, #f70d0d 0%, #ff0505 100%); color: white;">
-                            <i class='bx bx-file' style="font-size: 22px;"></i> Acta de hechos
-                        </button>
+                            <button onclick="App.goToStep('acta-hechos')" class="btn" style="background: linear-gradient(135deg, #f70d0d 0%, #ff0505 100%); color: white;">
+                                <i class='bx bx-file' style="font-size: 22px;"></i> Acta de hechos
+                            </button>
 
-
-                        <button onclick="AuthController.logout()" class="btn btn-secondary">
-                            <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar sesion
-                        </button>
-
-                    
+                            <button onclick="AuthController.logout()" class="btn btn-secondary">
+                                <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar sesion
+                            </button>
+                        `}
                     </div>
                     
+                    ${onlyGeocercas ? '' : `
                     <div class="stats-grid home-stats-grid">
                         <div class="stat-card">
                             <div class="stat-value stat-checklist" id="stat-checklist">--</div>
@@ -82,6 +88,7 @@ const HomeView = {
                             <strong>Nota importante:</strong> Este es un reporte de revisi&oacute;n diaria, por lo que no sustituye al reporte de fallas a taller. Para reportes de fallas, utiliza "Orden de servicio".
                         </p>
                     </div>
+                    `}
 
                 </div>
             </div>
