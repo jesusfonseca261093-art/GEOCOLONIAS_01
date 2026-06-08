@@ -11,9 +11,13 @@ const GeocercasView = {
         return `
             <style>
                 .geo-layout { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
-                .geo-sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.03); z-index: 20; display: flex; flex-direction: column; }
+                .geo-sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; overflow-x: hidden; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.03); z-index: 20; display: flex; flex-direction: column; }
+                .geo-sidebar, .geo-sidebar * { box-sizing: border-box; }
                 .geo-map-container { flex: 1; position: relative; background: #f1f5f9; }
                 .route-item-hover:hover { background: #e2e8f0 !important; color: #1e293b !important; transform: translateX(2px); }
+                .route-item-text { min-width: 0; overflow-wrap: anywhere; }
+                .leaflet-tooltip.route-name-label { background: transparent; border: 0; box-shadow: none; color: #1f2937; font-size: 11px; font-weight: 800; letter-spacing: 0.2px; text-shadow: -1px -1px 0 rgba(255,255,255,0.95), 1px -1px 0 rgba(255,255,255,0.95), -1px 1px 0 rgba(255,255,255,0.95), 1px 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(15,23,42,0.25); pointer-events: none; }
+                .leaflet-tooltip.route-name-label::before { display: none; }
                 .custom-scroll::-webkit-scrollbar { width: 4px; }
                 .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
                 @media (max-width: 768px) {
@@ -45,9 +49,9 @@ const GeocercasView = {
                         
                         <!-- Buscador por Texto -->
                         <div style="margin-bottom: 20px;">
-                            <div style="position: relative; display: flex; align-items: center;">
+                            <div style="position: relative; display: flex; align-items: center; width: 100%; min-width: 0;">
                                 <i class='bx bx-search' style="position: absolute; left: 12px; color: #64748b; font-size: 18px;"></i>
-                                <input type="text" id="route-search-input" onkeyup="GeocercasView.applySearch()" placeholder="Buscar ruta o colonia..." style="width: 100%; padding: 12px 35px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #f8fafc; outline: none; transition: border-color 0.2s;">
+                                <input type="text" id="route-search-input" onkeyup="GeocercasView.applySearch()" placeholder="Buscar ruta o colonia..." style="width: 100%; min-width: 0; box-sizing: border-box; padding: 12px 35px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #f8fafc; color: #0f172a; caret-color: #1e40af; outline: none; transition: border-color 0.2s;">
                                 <i class='bx bx-x' onclick="GeocercasView.clearSearch()" style="position: absolute; right: 12px; color: #94a3b8; font-size: 22px; cursor: pointer; transition: color 0.2s; padding: 2px;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'" title="Limpiar búsqueda"></i>
                             </div>
                         </div>
@@ -141,7 +145,7 @@ const GeocercasView = {
                         </div>
                         
                         <!-- Contenedor dinámico para la lista de rutas (Acordeón) -->
-                        <div id="routes-list-container" class="custom-scroll" style="display: none; background: #f8fafc; padding: 6px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: -2px; margin-bottom: 8px; overflow-y: auto; max-height: 250px;"></div>
+                        <div id="routes-list-container" class="custom-scroll" style="display: none; width: 100%; max-width: 100%; background: #f8fafc; padding: 6px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: -2px; margin-bottom: 8px; overflow-y: auto; overflow-x: hidden; max-height: 250px;"></div>
 
                         <!-- Contador de rutas -->
                         <div id="routesCount" style="margin-top: 30px; padding: 12px; background: #f1f5f9; border-radius: 8px; font-size: 12px; font-weight: 500; color: #475569; text-align: center; border: 1px dashed #cbd5e1;">
@@ -306,6 +310,25 @@ const GeocercasView = {
             "'": '&#39;'
         };
         return String(value || '').replace(/[&<>"']/g, char => entities[char]);
+    },
+
+    formatRouteLabel(routeName) {
+        return String(routeName || '')
+            .replace(/\s+/g, '')
+            .toUpperCase();
+    },
+
+    bindRouteLabel(layer, routeName) {
+        const label = this.formatRouteLabel(routeName);
+        if (!label) return;
+
+        layer.bindTooltip(this.escapeHtml(label), {
+            permanent: true,
+            direction: 'center',
+            className: 'route-name-label',
+            opacity: 1,
+            interactive: false
+        });
     },
 
     clearSearchMarkers() {
@@ -753,6 +776,8 @@ const GeocercasView = {
                 } else {
                     const isAdmin = App.appState && ['admin', 'supervisor'].includes(App.appState.userRole);
                     const onlyGeocercas = App.isGeocercasOnlyUser && App.isGeocercasOnlyUser();
+
+                    GeocercasView.bindRouteLabel(layer, name);
                     
                     layer.bindPopup(`
                         <div style="max-height: 250px; overflow-y: auto;">
@@ -800,7 +825,7 @@ const GeocercasView = {
                 listContainer.style.display = 'block';
                 listContainer.innerHTML = routeMatches.map(item => `
                     <div onclick="GeocercasView.centrarRuta('${item.safeName}')" class="route-item-hover" style="padding: 8px; border-radius: 4px; font-size: 11px; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9;">
-                        <span style="font-weight: 500;">
+                        <span class="route-item-text" style="font-weight: 500;">
                             📍 ${item.name}
                             ${item.preview ? `<span style="display: block; color: #64748b; font-weight: 400; margin-top: 2px;">${item.preview}</span>` : ''}
                         </span>

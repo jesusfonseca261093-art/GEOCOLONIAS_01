@@ -1,9 +1,59 @@
 // supervision.js - Vistas para el módulo de Supervisión en Campo
 
 const SupervisionView = {
+    SUPERVISORES: [
+        'SABIDO QUINTERO ILSSE MARIANA',
+        'MOLINA AGUILAR JULIO ALFREDO',
+        'BALTAZAR DEMETRIO CARLOS',
+        'TREJO CHAVEZ JOSE GUADALUPE',
+        'SANCHEZ ROMERO ROBERTO',
+        'MARTINEZ CABRERA ARTURO',
+        'LOPEZ SORIA JOSE ALBERTO',
+
+    ],
+
+    renderSupervisorOptions(selectedSupervisor = '') {
+        return this.SUPERVISORES.map(supervisor => `
+            <option value="${supervisor}" ${selectedSupervisor === supervisor ? 'selected' : ''}>
+                ${supervisor}
+            </option>
+        `).join('');
+    },
+
+    renderEscalaVendedorOptions(selectedScore = '') {
+        return Array.from({ length: 10 }, (_, index) => {
+            const score = String(index + 1);
+            const label = score === '1' ? '1 - Deficiente' : score === '10' ? '10 - Excelente' : score;
+            return `<option value="${score}" ${selectedScore === score ? 'selected' : ''}>${label}</option>`;
+        }).join('');
+    },
+
+    renderEncuestaPregunta(field, label, data, required = false) {
+        return `
+            <div class="form-group">
+                <label>${label}</label>
+                <select id="${field}"
+                        onchange="SupervisionController.updateFormData('${field}', this.value, App.appState)"
+                        ${required ? 'required' : ''}>
+                    <option value="" ${data[field] ? '' : 'selected'} disabled>Selecciona una calificación</option>
+                    ${this.renderEscalaVendedorOptions(data[field] || '')}
+                </select>
+            </div>
+        `;
+    },
+
     // Vista del formulario de supervisión
     renderForm(appState) {
         const data = appState.supervisionData;
+        if (!data.tipoVisita) {
+            data.tipoVisita = 'Atención a Queja';
+        }
+        const esAtencionQueja = data.tipoVisita === 'Atención a Queja';
+        const esSupervisionRuta = data.tipoVisita === 'Supervisión de Ruta';
+        if (!data.servicioCalleRecibido) {
+            data.servicioCalleRecibido = 'No';
+        }
+        const mostrarDatosPedidos = esSupervisionRuta && data.servicioCalleRecibido === 'Sí';
         
         // Actualizar fecha y hora si no existen
         const now = new Date();
@@ -41,12 +91,12 @@ const SupervisionView = {
                             
                             <div class="form-group">
                                 <label>Nombre del Supervisor</label>
-                                <input type="text" 
-                                       id="nombreSupervisor"
-                                       value="${data.nombreSupervisor || ''}"
-                                       oninput="SupervisionController.updateFormData('nombreSupervisor', this.value, App.appState)"
-                                       placeholder="Nombre completo"
-                                       required>
+                                <select id="nombreSupervisor"
+                                        onchange="SupervisionController.updateFormData('nombreSupervisor', this.value, App.appState)"
+                                        required>
+                                    <option value="" ${data.nombreSupervisor ? '' : 'selected'} disabled>Selecciona un supervisor</option>
+                                    ${this.renderSupervisorOptions(data.nombreSupervisor || '')}
+                                </select>
                             </div>
                             
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -67,6 +117,26 @@ const SupervisionView = {
                                            onchange="SupervisionController.updateFormData('hora', this.value, App.appState)"
                                            style="background: #f8fafc; font-weight: bold;">
                                     <p style="font-size: 10px; color: #64748b; margin-top: 2px;">Puedes modificar si es necesario</p>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group">
+                                    <label>Ruta</label>
+                                    <input type="text"
+                                           id="rutaSupervision"
+                                           value="${data.ruta || ''}"
+                                           oninput="SupervisionController.updateFormData('ruta', this.value, App.appState)"
+                                           placeholder="Ej: C002">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tipo de Visita</label>
+                                    <select id="tipoVisita"
+                                            onchange="SupervisionController.handleTipoVisitaChange(this.value, App.appState)"
+                                            required>
+                                        <option value="Atención a Queja" ${data.tipoVisita === 'Atención a Queja' ? 'selected' : ''}>Atención a Queja</option>
+                                        <option value="Supervisión de Ruta" ${data.tipoVisita === 'Supervisión de Ruta' ? 'selected' : ''}>Supervisión de Ruta</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -159,7 +229,7 @@ const SupervisionView = {
                         </div>
 
                         <!-- Detalles de la Visita -->
-                        <div class="card">
+                        <div class="card" id="detallesQuejaCard" style="${esAtencionQueja ? '' : 'display: none;'}">
                             <h3 style="margin-bottom: 16px; color: #1e293b;">📝 Detalles de la Visita</h3>
                       
                             <div class="form-group">
@@ -168,7 +238,7 @@ const SupervisionView = {
                                           oninput="SupervisionController.updateFormData('motivoQueja', this.value, App.appState)"
                                           placeholder="¿Cuál fue el motivo de la queja?"
                                           rows="3"
-                                          required>${data.motivoQueja || ''}</textarea>
+                                          ${esAtencionQueja ? 'required' : ''}>${data.motivoQueja || ''}</textarea>
                             </div>
 
                             <div class="form-group">
@@ -177,7 +247,76 @@ const SupervisionView = {
                                           oninput="SupervisionController.updateFormData('solucion', this.value, App.appState)"
                                           placeholder="¿Qué solución se le dio al cliente?"
                                           rows="3"
-                                          required>${data.solucion || ''}</textarea>
+                                          ${esAtencionQueja ? 'required' : ''}>${data.solucion || ''}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Detalles de Supervisión de Ruta -->
+                        <div class="card" id="detallesRutaCard" style="${esSupervisionRuta ? '' : 'display: none;'}">
+                            <h3 style="margin-bottom: 16px; color: #1e293b;">Supervisión de Ruta</h3>
+
+                            <div class="form-group">
+                                <label>Comentarios de lo encontrado en sitio</label>
+                                <textarea id="comentario"
+                                          oninput="SupervisionController.updateFormData('comentario', this.value, App.appState)"
+                                          placeholder="Describe qué encontró el supervisor en sitio, condiciones del servicio, atención y observaciones."
+                                          rows="4"
+                                          ${esSupervisionRuta ? 'required' : ''}>${data.comentario || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>¿El servicio es de calle?</label>
+                                <select id="servicioCalleRecibido"
+                                        onchange="SupervisionController.handleServicioCalleChange(this.value, App.appState)">
+                                    <option value="No" ${data.servicioCalleRecibido !== 'Sí' ? 'selected' : ''}>No</option>
+                                    <option value="Sí" ${data.servicioCalleRecibido === 'Sí' ? 'selected' : ''}>Sí</option>
+                                </select>
+                            </div>
+
+                            <div id="datosPedidosCliente" style="${mostrarDatosPedidos ? '' : 'display: none;'}">
+                                <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+                                    <div style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 10px;">Datos para registrar cliente</div>
+
+                                    <div class="form-group">
+                                        <label>Nombre para pedidos</label>
+                                        <input type="text"
+                                               id="datosPedidosNombre"
+                                               value="${data.datosPedidosNombre || ''}"
+                                               oninput="SupervisionController.updateFormData('datosPedidosNombre', this.value, App.appState)"
+                                               placeholder="Nombre completo del cliente"
+                                               ${mostrarDatosPedidos ? 'required' : ''}>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Teléfono para pedidos</label>
+                                        <input type="tel"
+                                               id="datosPedidosTelefono"
+                                               value="${data.datosPedidosTelefono || ''}"
+                                               oninput="SupervisionController.updateFormData('datosPedidosTelefono', this.value, App.appState)"
+                                               placeholder="Ej: 4421234567"
+                                               ${mostrarDatosPedidos ? 'required' : ''}>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Dirección / referencias para pedidos</label>
+                                        <textarea id="datosPedidosDireccion"
+                                                  oninput="SupervisionController.updateFormData('datosPedidosDireccion', this.value, App.appState)"
+                                                  placeholder="Dirección completa, referencias y datos útiles para levantar pedidos."
+                                                  rows="3"
+                                                  ${mostrarDatosPedidos ? 'required' : ''}>${data.datosPedidosDireccion || ''}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 10px;">Encuesta al cliente</div>
+                                <p style="font-size: 10px; color: #64748b; margin: 0 0 10px;">1 = Deficiente · 10 = Excelente</p>
+
+                                ${this.renderEncuestaPregunta('encuestaTratoVendedor', '¿Cómo fue el trato del vendedor?', data, esSupervisionRuta)}
+                                ${this.renderEncuestaPregunta('encuestaClaridadVendedor', '¿El vendedor explicó claramente la información del servicio?', data, esSupervisionRuta)}
+                                ${this.renderEncuestaPregunta('encuestaTiempoServicio', '¿Cómo califica el tiempo de atención del servicio?', data, esSupervisionRuta)}
+                                ${this.renderEncuestaPregunta('encuestaPresentacionVendedor', '¿Cómo fue la presentación e identificación del vendedor?', data, esSupervisionRuta)}
+                                ${this.renderEncuestaPregunta('encuestaSatisfaccionCliente', '¿Qué tan satisfecho quedó con el servicio recibido?', data, esSupervisionRuta)}
                             </div>
                         </div>
                         

@@ -70,6 +70,8 @@ const SuccessView = {
     
     // Vista de éxito para supervisión en campo
     renderSupervisionSuccess(ultimo = null) {
+        const tipoVisita = ultimo?.tipoVisita || 'Atención a Queja';
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
         
         return `
             <div class="container">
@@ -91,6 +93,8 @@ const SuccessView = {
                             <h4 style="color: #1e293b; margin-bottom: 10px;">📋 Resumen completo:</h4>
                             
                             <p style="font-size: 12px; margin: 5px 0;"><strong>👤 Supervisor:</strong> ${ultimo.nombreSupervisor || 'No especificado'}</p>
+                            <p style="font-size: 12px; margin: 5px 0;"><strong>📝 Tipo de Visita:</strong> ${tipoVisita}</p>
+                            ${ultimo.ruta ? `<p style="font-size: 12px; margin: 5px 0;"><strong>🛣️ Ruta:</strong> ${ultimo.ruta}</p>` : ''}
                             <p style="font-size: 12px; margin: 5px 0;"><strong>📅 Fecha/Hora:</strong> ${ultimo.fecha || ''} ${ultimo.hora || ''}</p>
                             <p style="font-size: 12px; margin: 5px 0;"><strong>🆔 Pedido:</strong> ${ultimo.numeroPedido || 'No especificado'}</p>
                             
@@ -109,11 +113,28 @@ const SuccessView = {
                             
                             <div style="border-top: 1px dashed #cbd5e1; margin: 10px 0;"></div>
                             
-                            <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
-                            <p style="font-size: 12px; margin: 5px 0;"><strong>Detalle de la visita:</strong> ${ultimo.detalleVisita || 'No especificado'}</p>
-                            <p style="font-size: 12px; margin: 5px 0;"><strong>Motivo de la queja:</strong> ${ultimo.motivoQueja || 'No especificado'}</p>
-                            <p style="font-size: 12px; margin: 5px 0;"><strong>Solución brindada:</strong> ${ultimo.solucion || 'No especificada'}</p>
-                            <p style="font-size: 12px; margin: 5px 0;"><strong>Comentario adicional:</strong> ${ultimo.comentario || 'Sin comentarios'}</p>
+                            ${esAtencionQueja ? `
+                                <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Detalle de la visita:</strong> ${ultimo.detalleVisita || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Motivo de la queja:</strong> ${ultimo.motivoQueja || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Solución brindada:</strong> ${ultimo.solucion || 'No especificada'}</p>
+                            ` : `
+                                <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Tipo:</strong> Supervisión de Ruta</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Hallazgos en sitio:</strong> ${ultimo.comentario || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Trato del vendedor:</strong> ${ultimo.encuestaTratoVendedor ? `${ultimo.encuestaTratoVendedor}/10` : 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Claridad de información:</strong> ${ultimo.encuestaClaridadVendedor ? `${ultimo.encuestaClaridadVendedor}/10` : 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Tiempo de atención:</strong> ${ultimo.encuestaTiempoServicio ? `${ultimo.encuestaTiempoServicio}/10` : 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Presentación del vendedor:</strong> ${ultimo.encuestaPresentacionVendedor ? `${ultimo.encuestaPresentacionVendedor}/10` : 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Satisfacción general:</strong> ${ultimo.encuestaSatisfaccionCliente ? `${ultimo.encuestaSatisfaccionCliente}/10` : 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Servicio de calle recibido:</strong> ${ultimo.servicioCalleRecibido || 'No'}</p>
+                                ${ultimo.servicioCalleRecibido === 'Sí' ? `
+                                    <p style="font-size: 12px; margin: 5px 0;"><strong>Nombre para pedidos:</strong> ${ultimo.datosPedidosNombre || 'No especificado'}</p>
+                                    <p style="font-size: 12px; margin: 5px 0;"><strong>Teléfono para pedidos:</strong> ${ultimo.datosPedidosTelefono || 'No especificado'}</p>
+                                    <p style="font-size: 12px; margin: 5px 0;"><strong>Dirección / referencias:</strong> ${ultimo.datosPedidosDireccion || 'No especificado'}</p>
+                                ` : ''}
+                            `}
+                            ${esAtencionQueja ? `<p style="font-size: 12px; margin: 5px 0;"><strong>Comentario adicional:</strong> ${ultimo.comentario || 'Sin comentarios'}</p>` : ''}
                             
                             ${ultimo.coordenadas?.lat ? `
                                 <div style="border-top: 1px dashed #cbd5e1; margin: 10px 0;"></div>

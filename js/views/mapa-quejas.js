@@ -146,7 +146,7 @@ const MapaQuejasView = {
             // 3. Filtro de Búsqueda
             if (App.appState.filterSearch) {
                 const s = App.appState.filterSearch.toLowerCase();
-                return (sup.nombreSupervisor?.toLowerCase().includes(s) || sup.nombreCliente?.toLowerCase().includes(s) || sup.motivoQueja?.toLowerCase().includes(s) || sup.ubicacion?.toLowerCase().includes(s));
+                return (sup.nombreSupervisor?.toLowerCase().includes(s) || sup.tipoVisita?.toLowerCase().includes(s) || sup.ruta?.toLowerCase().includes(s) || sup.nombreCliente?.toLowerCase().includes(s) || sup.motivoQueja?.toLowerCase().includes(s) || sup.comentario?.toLowerCase().includes(s) || sup.datosPedidosNombre?.toLowerCase().includes(s) || sup.datosPedidosTelefono?.toLowerCase().includes(s) || sup.ubicacion?.toLowerCase().includes(s));
             }
 
             // 4. Filtro de Tarjetas Estadísticas (Con Evidencia / Sin Evidencia)
@@ -209,6 +209,8 @@ const MapaQuejasView = {
     // Crear contenido del popup
     crearPopupContent(sup) {
         const isTest = AdminController.isTestRecord(sup);
+        const tipoVisita = sup.tipoVisita || 'Atención a Queja';
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
         let fotoHtml = '';
         if (sup.evidenciasFotos && sup.evidenciasFotos.length > 0) {
             fotoHtml = `<img src="${sup.evidenciasFotos[0].data}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
@@ -230,17 +232,35 @@ const MapaQuejasView = {
                 
                 <div style="font-size: 12px;">
                     <p style="margin: 5px 0;"><strong>📅 Fecha:</strong> ${sup.fecha || ''} ${sup.hora || ''}</p>
+                    <p style="margin: 5px 0;"><strong>📝 Tipo:</strong> ${tipoVisita}</p>
+                    ${sup.ruta ? `<p style="margin: 5px 0;"><strong>🛣️ Ruta:</strong> ${sup.ruta}</p>` : ''}
                     <p style="margin: 5px 0;"><strong>🆔 Pedido:</strong> ${sup.numeroPedido || 'N/A'}</p>
                     <p style="margin: 5px 0;"><strong>👤 Cliente:</strong> ${sup.nombreCliente || ''}</p>
                     <p style="margin: 5px 0;"><strong>📞 Teléfono:</strong> ${sup.telefonoCliente || ''}</p>
                     
-                    <div style="margin: 8px 0; padding: 5px; background: #fef3c7; border-radius: 4px;">
-                        <strong>📍 Motivo:</strong> ${sup.motivoQueja || 'No especificado'}
-                    </div>
-                    
-                    <div style="margin: 8px 0; padding: 5px; background: #dcfce7; border-radius: 4px;">
-                        <strong>✅ Solución:</strong> ${sup.solucion || 'No especificada'}
-                    </div>
+                    ${esAtencionQueja ? `
+                        <div style="margin: 8px 0; padding: 5px; background: #fef3c7; border-radius: 4px;">
+                            <strong>📍 Motivo:</strong> ${sup.motivoQueja || 'No especificado'}
+                        </div>
+
+                        <div style="margin: 8px 0; padding: 5px; background: #dcfce7; border-radius: 4px;">
+                            <strong>✅ Solución:</strong> ${sup.solucion || 'No especificada'}
+                        </div>
+                    ` : `
+                        <div style="margin: 8px 0; padding: 5px; background: #eef2ff; border-radius: 4px;">
+                            <strong>🔎 Hallazgos:</strong> ${sup.comentario || 'No especificado'}
+                        </div>
+
+                        <div style="margin: 8px 0; padding: 5px; background: #f8fafc; border-radius: 4px;">
+                            <strong>⭐ Trato vendedor:</strong> ${sup.encuestaTratoVendedor ? `${sup.encuestaTratoVendedor}/10` : 'No especificado'}<br>
+                            <strong>⭐ Claridad:</strong> ${sup.encuestaClaridadVendedor ? `${sup.encuestaClaridadVendedor}/10` : 'No especificado'}<br>
+                            <strong>⭐ Tiempo:</strong> ${sup.encuestaTiempoServicio ? `${sup.encuestaTiempoServicio}/10` : 'No especificado'}<br>
+                            <strong>⭐ Presentación:</strong> ${sup.encuestaPresentacionVendedor ? `${sup.encuestaPresentacionVendedor}/10` : 'No especificado'}<br>
+                            <strong>⭐ Satisfacción:</strong> ${sup.encuestaSatisfaccionCliente ? `${sup.encuestaSatisfaccionCliente}/10` : 'No especificado'}<br>
+                            <strong>🧾 Servicio recibido:</strong> ${sup.servicioCalleRecibido || 'No'}
+                            ${sup.servicioCalleRecibido === 'Sí' ? `<br><strong>Pedidos:</strong> ${sup.datosPedidosNombre || ''} ${sup.datosPedidosTelefono ? `(${sup.datosPedidosTelefono})` : ''}` : ''}
+                        </div>
+                    `}
                     
                     ${sup.ubicacion ? `
                         <p style="margin: 5px 0;"><strong>📍 Dirección:</strong> ${sup.ubicacion}</p>

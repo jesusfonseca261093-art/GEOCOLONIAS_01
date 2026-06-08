@@ -250,10 +250,15 @@ const AdminController = {
                 const s = App.appState.filterSearch.toLowerCase();
                 if (App.appState.activeTab === 'supervisiones') {
                     return (i.nombreSupervisor?.toLowerCase().includes(s) || 
+                            i.tipoVisita?.toLowerCase().includes(s) ||
+                            i.ruta?.toLowerCase().includes(s) ||
                             i.nombreCliente?.toLowerCase().includes(s) || 
                             i.numeroPedido?.toLowerCase().includes(s) || 
                             i.telefonoCliente?.toLowerCase().includes(s) || 
                             i.motivoQueja?.toLowerCase().includes(s) || 
+                            i.comentario?.toLowerCase().includes(s) ||
+                            i.datosPedidosNombre?.toLowerCase().includes(s) ||
+                            i.datosPedidosTelefono?.toLowerCase().includes(s) ||
                             i.ubicacion?.toLowerCase().includes(s));
                 } else {
                     return (i.operador?.toLowerCase().includes(s) || 
@@ -722,6 +727,8 @@ const AdminController = {
     renderSupervisionDetails(s) {
         const isTest = this.isTestRecord(s);
         const contentId = `supervision-content-${s.id || Date.now()}`;
+        const tipoVisita = s.tipoVisita || 'Atención a Queja';
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
         return `
             <div id="${contentId}" style="padding: 25px; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: ${isTest ? '#faf5ff' : 'white'}; ${isTest ? 'border: 2px solid #d8b4fe; border-radius: 12px;' : ''}">
                 ${isTest ? `
@@ -739,6 +746,17 @@ const AdminController = {
                     <!-- Fecha y hora -->
                     <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: #475569;">
                         <strong>📅 Fecha:</strong> ${s.fecha || ''} ${s.hora || ''}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">📝 TIPO DE VISITA</div>
+                            <div style="font-weight: bold; font-size: 14px;">${tipoVisita}</div>
+                        </div>
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">🛣️ RUTA</div>
+                            <div style="font-weight: bold; font-size: 14px;">${s.ruta || 'No especificada'}</div>
+                        </div>
                     </div>
                     
                     <!-- Pedido y cliente -->
@@ -762,27 +780,56 @@ const AdminController = {
                         </div>
                     </div>
                     
-                    <!-- Motivo de la queja (en rojo) -->
-                    <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc2626;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="color: #dc2626; font-size: 18px;">🔴</span>
-                            <span style="font-weight: bold; color: #991b1b;">MOTIVO DE LA QUEJA</span>
+                    ${esAtencionQueja ? `
+                        <!-- Motivo de la queja (en rojo) -->
+                        <div style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #dc2626;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="color: #dc2626; font-size: 18px;">🔴</span>
+                                <span style="font-weight: bold; color: #991b1b;">MOTIVO DE LA QUEJA</span>
+                            </div>
+                            <p style="margin: 5px 0 0 0; color: #7f1d1d; font-size: 14px;">
+                                ${s.motivoQueja || 'EL CLIENTE SE QUEJA PORQUE NO LE DURA EL GAS'}
+                            </p>
                         </div>
-                        <p style="margin: 5px 0 0 0; color: #7f1d1d; font-size: 14px;">
-                            ${s.motivoQueja || 'EL CLIENTE SE QUEJA PORQUE NO LE DURA EL GAS'}
-                        </p>
-                    </div>
-                    
-                    <!-- Solución brindada (en verde) -->
-                    <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #16a34a;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                            <span style="color: #16a34a; font-size: 18px;">✅</span>
-                            <span style="font-weight: bold; color: #166534;">SOLUCIÓN BRINDADA</span>
+
+                        <!-- Solución brindada (en verde) -->
+                        <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #16a34a;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="color: #16a34a; font-size: 18px;">✅</span>
+                                <span style="font-weight: bold; color: #166534;">SOLUCIÓN BRINDADA</span>
+                            </div>
+                            <p style="margin: 5px 0 0 0; color: #14532d; font-size: 14px;">
+                                ${s.solucion || 'SE REVISA NOTAS DE CONSUMO Y SE REALIZA REPOSICIÓN DE GAS 20 KG.'}
+                            </p>
                         </div>
-                        <p style="margin: 5px 0 0 0; color: #14532d; font-size: 14px;">
-                            ${s.solucion || 'SE REVISA NOTAS DE CONSUMO Y SE REALIZA REPOSICIÓN DE GAS 20 KG.'}
-                        </p>
-                    </div>
+                    ` : `
+                        <div style="background: #eef2ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4f46e5;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="color: #4f46e5; font-size: 18px;">🔎</span>
+                                <span style="font-weight: bold; color: #312e81;">HALLAZGOS EN SITIO</span>
+                            </div>
+                            <p style="margin: 5px 0 0 0; color: #312e81; font-size: 14px;">
+                                ${s.comentario || 'No especificado'}
+                            </p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #64748b;">
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>⭐ Trato del vendedor:</strong> ${s.encuestaTratoVendedor ? `${s.encuestaTratoVendedor}/10` : 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>⭐ Claridad de información:</strong> ${s.encuestaClaridadVendedor ? `${s.encuestaClaridadVendedor}/10` : 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>⭐ Tiempo de atención:</strong> ${s.encuestaTiempoServicio ? `${s.encuestaTiempoServicio}/10` : 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>⭐ Presentación del vendedor:</strong> ${s.encuestaPresentacionVendedor ? `${s.encuestaPresentacionVendedor}/10` : 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>⭐ Satisfacción general:</strong> ${s.encuestaSatisfaccionCliente ? `${s.encuestaSatisfaccionCliente}/10` : 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>🧾 Servicio de calle recibido:</strong> ${s.servicioCalleRecibido || 'No'}</p>
+                            ${s.servicioCalleRecibido === 'Sí' ? `
+                                <div style="border-top: 1px dashed #cbd5e1; margin-top: 10px; padding-top: 10px;">
+                                    <div style="font-weight: bold; color: #0f172a; margin-bottom: 5px;">Datos para registrar en pedidos</div>
+                                    <p style="margin: 4px 0; color: #334155; font-size: 13px;"><strong>Nombre:</strong> ${s.datosPedidosNombre || 'No especificado'}</p>
+                                    <p style="margin: 4px 0; color: #334155; font-size: 13px;"><strong>Teléfono:</strong> ${s.datosPedidosTelefono || 'No especificado'}</p>
+                                    <p style="margin: 4px 0; color: #334155; font-size: 13px;"><strong>Dirección / referencias:</strong> ${s.datosPedidosDireccion || 'No especificado'}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `}
                     
                     <!-- Dirección (en azul) -->
                     <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2563eb;">
@@ -840,7 +887,7 @@ const AdminController = {
                     ` : ''}
                     
                     <!-- Comentario adicional -->
-                    ${s.comentario ? `
+                    ${esAtencionQueja && s.comentario ? `
                         <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 8px; font-size: 13px;">
                             <strong>📝 Comentario:</strong> ${s.comentario}
                         </div>
@@ -894,7 +941,12 @@ const AdminController = {
             filtered = filtered.filter(i => i.operador?.toLowerCase().includes(s) || 
                                            i.unidad?.toLowerCase().includes(s) || 
                                            i.folio?.toString().includes(s) || 
-                                           i.nombreSupervisor?.toLowerCase().includes(s));
+                                           i.nombreSupervisor?.toLowerCase().includes(s) ||
+                                           i.tipoVisita?.toLowerCase().includes(s) ||
+                                           i.ruta?.toLowerCase().includes(s) ||
+                                           i.comentario?.toLowerCase().includes(s) ||
+                                           i.datosPedidosNombre?.toLowerCase().includes(s) ||
+                                           i.datosPedidosTelefono?.toLowerCase().includes(s));
         }
         
         if (App.appState.activeTab === 'checklists' && App.appState.filterTipoRuta && App.appState.filterTipoRuta !== 'Todos') {
@@ -952,8 +1004,8 @@ const AdminController = {
     
     exportToCSVFormat(d,t) { 
         if (t === 'supervisiones') {
-            return 'Fecha,Hora,Supervisor,Pedido,Cliente,Teléfono,Motivo,Solución,Ubicación\n' + 
-                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${i.numeroPedido}","${i.nombreCliente}","${i.telefonoCliente}","${i.motivoQueja}","${i.solucion}","${i.ubicacion}"`).join('\n');
+            return 'Fecha,Hora,Supervisor,Tipo de Visita,Ruta,Pedido,Cliente,Teléfono,Motivo,Solución,Hallazgos,Trato Vendedor,Claridad Información,Tiempo Atención,Presentación Vendedor,Satisfacción General,Servicio Calle Recibido,Nombre Pedidos,Teléfono Pedidos,Dirección Pedidos,Ubicación\n' +
+                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${i.tipoVisita || 'Atención a Queja'}","${i.ruta || ''}","${i.numeroPedido}","${i.nombreCliente}","${i.telefonoCliente}","${i.motivoQueja || ''}","${i.solucion || ''}","${i.comentario || ''}","${i.encuestaTratoVendedor || ''}","${i.encuestaClaridadVendedor || ''}","${i.encuestaTiempoServicio || ''}","${i.encuestaPresentacionVendedor || ''}","${i.encuestaSatisfaccionCliente || ''}","${i.servicioCalleRecibido || ''}","${i.datosPedidosNombre || ''}","${i.datosPedidosTelefono || ''}","${i.datosPedidosDireccion || ''}","${i.ubicacion}"`).join('\n');
         }
         return '';
     },

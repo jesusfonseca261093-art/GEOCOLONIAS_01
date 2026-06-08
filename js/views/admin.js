@@ -776,7 +776,20 @@ const AdminView = {
             
         } else {
             // SUPERVISIONES
-            return items.map(supervision => `
+            return items.map(supervision => {
+                const tipoVisita = supervision.tipoVisita || 'Atención a Queja';
+                const esAtencionQueja = tipoVisita === 'Atención a Queja';
+                const encuestaScores = [
+                    supervision.encuestaTratoVendedor,
+                    supervision.encuestaClaridadVendedor,
+                    supervision.encuestaTiempoServicio,
+                    supervision.encuestaPresentacionVendedor,
+                    supervision.encuestaSatisfaccionCliente
+                ].map(Number).filter(score => !Number.isNaN(score));
+                const promedioEncuesta = encuestaScores.length
+                    ? (encuestaScores.reduce((total, score) => total + score, 0) / encuestaScores.length).toFixed(1)
+                    : '';
+                return `
                 <div class="report-card" style="border-left: 4px solid #0867ec;">
                     <div class="report-header">
                         <div>
@@ -792,7 +805,8 @@ const AdminView = {
                     </div>
                     
                     <div style="margin: 8px 0; padding: 8px; background: #f0f9ff; border-radius: 6px; font-size: 12px;">
-                        <strong>📍 Motivo:</strong> ${supervision.motivoQueja ? supervision.motivoQueja.substring(0, 80) + (supervision.motivoQueja.length > 80 ? '...' : '') : 'No especificado'}
+                        <strong>📝 Tipo:</strong> ${tipoVisita}
+                        ${supervision.ruta ? `<br><strong>🛣️ Ruta:</strong> ${supervision.ruta}` : ''}
                     </div>
                     
                     <div style="margin: 8px 0; font-size: 11px; color: #475569; display: flex; flex-wrap: wrap; gap: 10px;">
@@ -800,9 +814,24 @@ const AdminView = {
                         ${supervision.ubicacion ? `<span>📍 ${supervision.ubicacion.substring(0, 30)}${supervision.ubicacion.length > 30 ? '...' : ''}</span>` : ''}
                     </div>
                     
-                    <div style="margin: 8px 0; padding: 8px; background: #ecfdf5; border-radius: 6px; font-size: 12px; color: #065f46;">
-                        <strong>✅ Solución:</strong> ${supervision.solucion ? supervision.solucion.substring(0, 60) + (supervision.solucion.length > 60 ? '...' : '') : 'No especificada'}
-                    </div>
+                    ${esAtencionQueja ? `
+                        <div style="margin: 8px 0; padding: 8px; background: #fff7ed; border-radius: 6px; font-size: 12px; color: #9a3412;">
+                            <strong>📍 Motivo:</strong> ${supervision.motivoQueja ? supervision.motivoQueja.substring(0, 80) + (supervision.motivoQueja.length > 80 ? '...' : '') : 'No especificado'}
+                        </div>
+
+                        <div style="margin: 8px 0; padding: 8px; background: #ecfdf5; border-radius: 6px; font-size: 12px; color: #065f46;">
+                            <strong>✅ Solución:</strong> ${supervision.solucion ? supervision.solucion.substring(0, 60) + (supervision.solucion.length > 60 ? '...' : '') : 'No especificada'}
+                        </div>
+                    ` : `
+                        <div style="margin: 8px 0; padding: 8px; background: #eef2ff; border-radius: 6px; font-size: 12px; color: #312e81;">
+                            <strong>🔎 Hallazgos:</strong> ${supervision.comentario ? supervision.comentario.substring(0, 80) + (supervision.comentario.length > 80 ? '...' : '') : 'No especificado'}
+                        </div>
+
+                        <div style="margin: 8px 0; padding: 8px; background: #f8fafc; border-radius: 6px; font-size: 12px; color: #334155;">
+                            <strong>⭐ Encuesta cliente:</strong> ${promedioEncuesta ? `${promedioEncuesta}/10 promedio` : 'No especificada'}
+                            ${supervision.servicioCalleRecibido === 'Sí' ? '<br><strong>🧾 Para pedidos:</strong> Sí' : ''}
+                        </div>
+                    `}
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
                         <div style="font-size: 11px; color: #64748b; display: flex; gap: 10px;">
@@ -817,7 +846,8 @@ const AdminView = {
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
     },
 

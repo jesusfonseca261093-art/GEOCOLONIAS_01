@@ -3,6 +3,14 @@
 const SupervisionController = {
     // Clave de acceso para supervisión
     SUPERVISION_KEY: "nieto2025",
+
+    ENCUESTA_RUTA_FIELDS: [
+        'encuestaTratoVendedor',
+        'encuestaClaridadVendedor',
+        'encuestaTiempoServicio',
+        'encuestaPresentacionVendedor',
+        'encuestaSatisfaccionCliente'
+    ],
     
     // Variable para almacenar las coordenadas actuales
     currentLocation: {
@@ -179,6 +187,75 @@ const SupervisionController = {
         appState.supervisionData[field] = value;
     },
 
+    handleTipoVisitaChange(value, appState) {
+        this.updateFormData('tipoVisita', value, appState);
+
+        const esAtencionQueja = value === 'Atención a Queja';
+        const esSupervisionRuta = value === 'Supervisión de Ruta';
+        const detallesQuejaCard = document.getElementById('detallesQuejaCard');
+        if (detallesQuejaCard) {
+            detallesQuejaCard.style.display = esAtencionQueja ? '' : 'none';
+        }
+        const detallesRutaCard = document.getElementById('detallesRutaCard');
+        if (detallesRutaCard) {
+            detallesRutaCard.style.display = esSupervisionRuta ? '' : 'none';
+        }
+
+        ['motivoQueja', 'solucion'].forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            field.required = esAtencionQueja;
+            if (!esAtencionQueja) field.value = '';
+        });
+
+        if (!esAtencionQueja) {
+            appState.supervisionData.motivoQueja = '';
+            appState.supervisionData.solucion = '';
+        }
+
+        const comentarioField = document.getElementById('comentario');
+        if (comentarioField) comentarioField.required = esSupervisionRuta;
+
+        this.ENCUESTA_RUTA_FIELDS.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) field.required = esSupervisionRuta;
+        });
+
+        if (!esSupervisionRuta) {
+            appState.supervisionData.servicioCalleRecibido = 'No';
+            appState.supervisionData.datosPedidosNombre = '';
+            appState.supervisionData.datosPedidosTelefono = '';
+            appState.supervisionData.datosPedidosDireccion = '';
+            this.ENCUESTA_RUTA_FIELDS.forEach(field => {
+                appState.supervisionData[field] = '';
+            });
+            this.handleServicioCalleChange('No', appState);
+        }
+    },
+
+    handleServicioCalleChange(value, appState) {
+        this.updateFormData('servicioCalleRecibido', value, appState);
+
+        const mostrarDatosPedidos = value === 'Sí';
+        const datosPedidosCliente = document.getElementById('datosPedidosCliente');
+        if (datosPedidosCliente) {
+            datosPedidosCliente.style.display = mostrarDatosPedidos ? '' : 'none';
+        }
+
+        ['datosPedidosNombre', 'datosPedidosTelefono', 'datosPedidosDireccion'].forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            field.required = mostrarDatosPedidos;
+            if (!mostrarDatosPedidos) field.value = '';
+        });
+
+        if (!mostrarDatosPedidos) {
+            appState.supervisionData.datosPedidosNombre = '';
+            appState.supervisionData.datosPedidosTelefono = '';
+            appState.supervisionData.datosPedidosDireccion = '';
+        }
+    },
+
     // Manejar carga de fotos (MÚLTIPLES)
     handlePhotoUpload(input, appState) {
         const files = Array.from(input.files);
@@ -287,6 +364,11 @@ const SupervisionController = {
             alert('❌ El nombre del supervisor es obligatorio');
             return false;
         }
+
+        if (!data.tipoVisita?.trim()) {
+            alert('❌ El tipo de visita es obligatorio');
+            return false;
+        }
         
         if (!data.numeroPedido?.trim()) {
             alert('❌ El número de pedido es obligatorio');
@@ -302,15 +384,47 @@ const SupervisionController = {
             alert('❌ El nombre del cliente es obligatorio');
             return false;
         }
-        
-        if (!data.motivoQueja?.trim()) {
-            alert('❌ El motivo de la queja es obligatorio');
-            return false;
+
+        if (data.tipoVisita === 'Atención a Queja') {
+            if (!data.motivoQueja?.trim()) {
+                alert('❌ El motivo de la queja es obligatorio');
+                return false;
+            }
+
+            if (!data.solucion?.trim()) {
+                alert('❌ La solución brindada es obligatoria');
+                return false;
+            }
         }
-        
-        if (!data.solucion?.trim()) {
-            alert('❌ La solución brindada es obligatoria');
-            return false;
+
+        if (data.tipoVisita === 'Supervisión de Ruta') {
+            if (!data.comentario?.trim()) {
+                alert('❌ Los comentarios de lo encontrado en sitio son obligatorios');
+                return false;
+            }
+
+            const encuestaCompleta = this.ENCUESTA_RUTA_FIELDS.every(field => data[field]?.trim());
+            if (!encuestaCompleta) {
+                alert('❌ Completa las 5 preguntas de la encuesta al cliente');
+                return false;
+            }
+
+            if (data.servicioCalleRecibido === 'Sí') {
+                if (!data.datosPedidosNombre?.trim()) {
+                    alert('❌ El nombre para pedidos es obligatorio');
+                    return false;
+                }
+
+                if (!data.datosPedidosTelefono?.trim()) {
+                    alert('❌ El teléfono para pedidos es obligatorio');
+                    return false;
+                }
+
+                if (!data.datosPedidosDireccion?.trim()) {
+                    alert('❌ La dirección o referencias para pedidos son obligatorias');
+                    return false;
+                }
+            }
         }
         
         if (!data.firmaSupervisor) {
@@ -333,12 +447,32 @@ const SupervisionController = {
         App.render();
         
         const now = new Date();
+        const tipoVisita = appState.supervisionData.tipoVisita || 'Atención a Queja';
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionRuta = tipoVisita === 'Supervisión de Ruta';
+        const registraClientePedidos = esSupervisionRuta && appState.supervisionData.servicioCalleRecibido === 'Sí';
+        const datosSupervision = {
+            ...appState.supervisionData,
+            tipoVisita,
+            motivoQueja: esAtencionQueja ? appState.supervisionData.motivoQueja : '',
+            solucion: esAtencionQueja ? appState.supervisionData.solucion : '',
+            comentario: esSupervisionRuta ? appState.supervisionData.comentario : (appState.supervisionData.comentario || ''),
+            servicioCalleRecibido: esSupervisionRuta ? (appState.supervisionData.servicioCalleRecibido || 'No') : '',
+            encuestaTratoVendedor: esSupervisionRuta ? appState.supervisionData.encuestaTratoVendedor : '',
+            encuestaClaridadVendedor: esSupervisionRuta ? appState.supervisionData.encuestaClaridadVendedor : '',
+            encuestaTiempoServicio: esSupervisionRuta ? appState.supervisionData.encuestaTiempoServicio : '',
+            encuestaPresentacionVendedor: esSupervisionRuta ? appState.supervisionData.encuestaPresentacionVendedor : '',
+            encuestaSatisfaccionCliente: esSupervisionRuta ? appState.supervisionData.encuestaSatisfaccionCliente : '',
+            datosPedidosNombre: registraClientePedidos ? appState.supervisionData.datosPedidosNombre : '',
+            datosPedidosTelefono: registraClientePedidos ? appState.supervisionData.datosPedidosTelefono : '',
+            datosPedidosDireccion: registraClientePedidos ? appState.supervisionData.datosPedidosDireccion : ''
+        };
         const reporte = {
             id: Date.now().toString(),
             tipo: 'supervision',
-            ...appState.supervisionData,
-            fecha: appState.supervisionData.fecha || now.toISOString().split('T')[0],
-            hora: appState.supervisionData.hora || now.toLocaleTimeString('es-MX', { 
+            ...datosSupervision,
+            fecha: datosSupervision.fecha || now.toISOString().split('T')[0],
+            hora: datosSupervision.hora || now.toLocaleTimeString('es-MX', {
                 hour: '2-digit', 
                 minute: '2-digit',
                 hour12: false 
@@ -347,12 +481,12 @@ const SupervisionController = {
                 lat: this.currentLocation.lat,
                 lng: this.currentLocation.lng
             },
-            direccionCompleta: this.currentLocation.address || appState.supervisionData.ubicacion,
+            direccionCompleta: this.currentLocation.address || datosSupervision.ubicacion,
             timestamp: now.getTime(),
             enlaceMaps: this.currentLocation.lat && this.currentLocation.lng 
                 ? `https://www.google.com/maps?q=${this.currentLocation.lat},${this.currentLocation.lng}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(appState.supervisionData.ubicacion || '')}`,
-            cantidadFotos: appState.supervisionData.evidenciasFotos?.length || 0
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(datosSupervision.ubicacion || '')}`,
+            cantidadFotos: datosSupervision.evidenciasFotos?.length || 0
         };
         
         setTimeout(async () => {
@@ -375,6 +509,8 @@ const SupervisionController = {
                 // Resetear formulario
                 appState.supervisionData = {
                     nombreSupervisor: '',
+                    ruta: '',
+                    tipoVisita: 'Atención a Queja',
                     fecha: now.toISOString().split('T')[0],
                     hora: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false }),
                     numeroPedido: '',
@@ -387,6 +523,15 @@ const SupervisionController = {
                     motivoQueja: '',
                     comentario: '',
                     solucion: '',
+                    servicioCalleRecibido: 'No',
+                    datosPedidosNombre: '',
+                    datosPedidosTelefono: '',
+                    datosPedidosDireccion: '',
+                    encuestaTratoVendedor: '',
+                    encuestaClaridadVendedor: '',
+                    encuestaTiempoServicio: '',
+                    encuestaPresentacionVendedor: '',
+                    encuestaSatisfaccionCliente: '',
                     evidenciasFotos: [],
                     firmaSupervisor: null
                 };
@@ -449,12 +594,35 @@ const SupervisionController = {
             ubicacionGPS = `⚠️ *ALERTA:* El supervisor bloqueó o apagó el GPS del celular.\n📍 *Dirección escrita a mano (NO VERIFICADA):* ${reporte.ubicacion || 'No ingresada'}`;
         }
 
+        const esAtencionQueja = (reporte.tipoVisita || 'Atención a Queja') === 'Atención a Queja';
+        const esSupervisionRuta = reporte.tipoVisita === 'Supervisión de Ruta';
+        const detalleVisita = esAtencionQueja
+            ? `🔴 *Queja:* ${reporte.motivoQueja}\n` +
+              `✅ *Solución:* ${reporte.solucion}\n`
+            : esSupervisionRuta
+                ? `🔎 *Hallazgos en sitio:* ${reporte.comentario || 'No registrado'}\n` +
+                  `⭐ *Encuesta al cliente:*\n` +
+                  `- Trato del vendedor: ${reporte.encuestaTratoVendedor || 'N/A'}/10\n` +
+                  `- Claridad de información: ${reporte.encuestaClaridadVendedor || 'N/A'}/10\n` +
+                  `- Tiempo de atención: ${reporte.encuestaTiempoServicio || 'N/A'}/10\n` +
+                  `- Presentación del vendedor: ${reporte.encuestaPresentacionVendedor || 'N/A'}/10\n` +
+                  `- Satisfacción general: ${reporte.encuestaSatisfaccionCliente || 'N/A'}/10\n` +
+                  `🧾 *Servicio de calle recibido:* ${reporte.servicioCalleRecibido || 'No'}\n` +
+                  (reporte.servicioCalleRecibido === 'Sí'
+                    ? `📋 *Datos para pedidos:*\n` +
+                      `Nombre: ${reporte.datosPedidosNombre || 'No registrado'}\n` +
+                      `Teléfono: ${reporte.datosPedidosTelefono || 'No registrado'}\n` +
+                      `Dirección/Referencias: ${reporte.datosPedidosDireccion || 'No registrado'}\n`
+                    : '')
+            : '';
+
         const mensaje = `🚨 *SUPERVISIÓN COMPLETADA* 🚨\n\n` +
                         `👨‍🔧 *Supervisor:* ${reporte.nombreSupervisor}\n` +
+                        `📝 *Tipo de Visita:* ${reporte.tipoVisita || 'Atención a Queja'}\n` +
+                        `${reporte.ruta ? `🛣️ *Ruta:* ${reporte.ruta}\n` : ''}` +
                         `👤 *Cliente:* ${reporte.nombreCliente}\n` +
                         `📦 *Pedido:* ${reporte.numeroPedido}\n` +
-                        `🔴 *Queja:* ${reporte.motivoQueja}\n` +
-                        `✅ *Solución:* ${reporte.solucion}\n` +
+                        detalleVisita +
                         `📅 *Fecha/Hora:* ${reporte.fecha} ${reporte.hora}\n\n` +
                         `${ubicacionGPS}`;
         const encodedMessage = encodeURIComponent(mensaje);
