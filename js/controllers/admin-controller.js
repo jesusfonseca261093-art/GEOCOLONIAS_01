@@ -712,6 +712,37 @@ const AdminController = {
         }
     },
 
+    async deleteSingleSupervision(id) {
+        if (!id) return alert("❌ No se encontró el ID de la supervisión.");
+        if (!confirm("¿Eliminar solo esta supervisión?\n\nNo se borrarán las demás supervisiones.")) return;
+
+        const loadingMsg = document.createElement('div');
+        loadingMsg.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:10000;text-align:center;font-weight:bold;">Eliminando supervisión...</div>';
+        document.body.appendChild(loadingMsg);
+
+        try {
+            const success = await StorageService.deleteSupervision(id);
+            if (!success) {
+                alert("❌ No se pudo eliminar la supervisión en la base de datos.");
+                return;
+            }
+
+            if (ModalService.currentModal) ModalService.close();
+            if (App.appState.activeTab !== 'supervisiones') {
+                App.appState.activeTab = 'supervisiones';
+            }
+            await this.loadReportsIntoPanel();
+            alert("✅ Supervisión eliminada correctamente.");
+        } catch (error) {
+            console.error("Error eliminando supervisión:", error);
+            alert("❌ Error de conexión al intentar eliminar la supervisión.");
+        } finally {
+            if (document.body.contains(loadingMsg)) {
+                document.body.removeChild(loadingMsg);
+            }
+        }
+    },
+
     // Ver supervisiones
     async viewSupervision(id) { 
         const supervisiones = await StorageService.loadSupervisiones();
@@ -904,12 +935,10 @@ const AdminController = {
                             style="flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         📄 Descargar PDF
                     </button>
-                    ${isTest ? `
-                    <button onclick="AdminController.deleteTestRecord('${s.id}', 'supervisiones')"
+                    <button onclick="AdminController.deleteSingleSupervision('${s.id}')"
                             style="flex: 1; padding: 12px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                        🗑️ Eliminar Prueba
+                        🗑️ Eliminar
                     </button>
-                    ` : ''}
                 </div>
             </div>
         `; 
@@ -919,6 +948,8 @@ const AdminController = {
     showExportDialog(format) {
         if (format === 'pdf') {
             this.exportAllToPDF();
+        } else if (format === 'excel') {
+            this.exportToExcel();
         } else if (format === 'csv') {
             this.exportToCSV();
         }

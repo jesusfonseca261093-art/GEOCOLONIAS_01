@@ -27,6 +27,10 @@ const AdminView = {
                                 style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
                             <i class='bx bxs-file-pdf'></i> PDF
                         </button>
+                        <button onclick="AdminController.showExportDialog('excel')"
+                                style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <i class='bx bx-spreadsheet'></i> Excel
+                        </button>
                     ${appState.userRole === 'admin' ? `
                         <button onclick="AdminController.showPasswordModal()"
                                 style="background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
@@ -211,6 +215,10 @@ const AdminView = {
                         <button onclick="AdminController.showExportDialog('pdf')"
                                 style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
                             📄 Exportar PDF
+                        </button>
+                        <button onclick="AdminController.showExportDialog('excel')"
+                                style="background: #16a34a; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
+                            Excel
                         </button>
                         <button onclick="AdminController.showExportDialog('csv')"
                                 style="background: #22c55e; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px;">
@@ -840,10 +848,16 @@ const AdminView = {
                                 supervision.evidenciaFoto ? '📸 1 foto' : '📸 Sin fotos'}
                             ${supervision.coordenadas ? ' | 🗺️ Geo' : ''}
                         </div>
-                        <button onclick="AdminController.viewSupervision('${supervision.id}')"
-                                style="background: #0867ec; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
-                            Ver detalles
-                        </button>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="AdminController.viewSupervision('${supervision.id}')"
+                                    style="background: #0867ec; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                                Ver detalles
+                            </button>
+                            <button onclick="AdminController.deleteSingleSupervision('${supervision.id}')"
+                                    style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;">
+                                Eliminar
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;

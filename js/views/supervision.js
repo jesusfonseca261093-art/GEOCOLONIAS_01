@@ -357,7 +357,8 @@ const SupervisionView = {
                                 </div>
                                 
                                 <!-- Contador y botón para eliminar todas -->
-                                ${appState.supervisionData.evidenciasFotos?.length > 0 ? `
+                                <div id="supervisionFotosCounter">
+                                    ${appState.supervisionData.evidenciasFotos?.length > 0 ? `
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 8px; background: #f8fafc; border-radius: 6px;">
                                         <span style="font-size: 12px; color: #64748b;">
                                             📸 ${appState.supervisionData.evidenciasFotos.length} de 5 fotos
@@ -368,7 +369,8 @@ const SupervisionView = {
                                             Eliminar todas
                                         </button>
                                     </div>
-                                ` : ''}
+                                    ` : ''}
+                                </div>
                             </div>
                         </div>
 

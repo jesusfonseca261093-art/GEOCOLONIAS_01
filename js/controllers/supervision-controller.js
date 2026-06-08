@@ -256,6 +256,43 @@ const SupervisionController = {
         }
     },
 
+    renderPhotoPreview(appState) {
+        const fotos = appState.supervisionData.evidenciasFotos || [];
+        const preview = document.getElementById('supervisionFotosPreview');
+        const counter = document.getElementById('supervisionFotosCounter');
+
+        if (preview) {
+            preview.innerHTML = fotos.map((foto, index) => `
+                <div style="position: relative; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; aspect-ratio: 1/1;">
+                    <img src="${foto.data}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <button type="button"
+                            onclick="SupervisionController.removeSpecificPhoto(App.appState, ${foto.id})"
+                            style="position: absolute; top: 5px; right: 5px; background: #dc2626; color: white; border: none; width: 24px; height: 24px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        ✕
+                    </button>
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.5); color: white; padding: 2px; font-size: 9px; text-align: center;">
+                        Foto ${index + 1}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (counter) {
+            counter.innerHTML = fotos.length > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 8px; background: #f8fafc; border-radius: 6px;">
+                    <span style="font-size: 12px; color: #64748b;">
+                        📸 ${fotos.length} de 5 fotos
+                    </span>
+                    <button type="button"
+                            onclick="SupervisionController.removePhoto(App.appState)"
+                            style="background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                        Eliminar todas
+                    </button>
+                </div>
+            ` : '';
+        }
+    },
+
     // Manejar carga de fotos (MÚLTIPLES)
     handlePhotoUpload(input, appState) {
         const files = Array.from(input.files);
@@ -264,30 +301,45 @@ const SupervisionController = {
         if (!appState.supervisionData.evidenciasFotos) {
             appState.supervisionData.evidenciasFotos = [];
         }
+
+        const espaciosDisponibles = 5 - appState.supervisionData.evidenciasFotos.length;
+        if (espaciosDisponibles <= 0) {
+            alert('Solo puedes adjuntar máximo 5 fotos.');
+            input.value = '';
+            return;
+        }
+
+        const filesToProcess = files.slice(0, espaciosDisponibles);
+        if (files.length > espaciosDisponibles) {
+            alert(`Solo se agregarán ${espaciosDisponibles} foto(s). El máximo es 5.`);
+        }
         
-        files.forEach((file, index) => {
+        let processed = 0;
+        filesToProcess.forEach((file, index) => {
             const reader = new FileReader();
             
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const maxWidth = 1024;
-                    const scale = maxWidth / img.width;
-                    canvas.width = maxWidth;
-                    canvas.height = img.height * scale;
+                    const maxSize = 1024;
+                    const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                    canvas.width = Math.round(img.width * scale);
+                    canvas.height = Math.round(img.height * scale);
                     
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
                     appState.supervisionData.evidenciasFotos.push({
-                        id: Date.now() + index,
-                        data: canvas.toDataURL('image/jpeg', 0.85),
+                        id: Date.now() + index + Math.floor(Math.random() * 1000),
+                        data: canvas.toDataURL('image/jpeg', 0.75),
                         name: file.name
                     });
-                    
-                    if (index === files.length - 1) {
-                        App.render();
+
+                    processed++;
+                    if (processed === filesToProcess.length) {
+                        this.renderPhotoPreview(appState);
+                        input.value = '';
                     }
                 };
                 img.src = e.target.result;
@@ -302,14 +354,14 @@ const SupervisionController = {
         if (appState.supervisionData.evidenciasFotos) {
             appState.supervisionData.evidenciasFotos = 
                 appState.supervisionData.evidenciasFotos.filter(p => p.id !== photoId);
-            App.render();
+            this.renderPhotoPreview(appState);
         }
     },
 
     // Eliminar todas las fotos
     removePhoto(appState) {
         appState.supervisionData.evidenciasFotos = [];
-        App.render();
+        this.renderPhotoPreview(appState);
     },
 
     // Abrir en Google Maps con ubicación actual - CORREGIDO
