@@ -9,6 +9,7 @@ const SupervisionView = {
         'SANCHEZ ROMERO ROBERTO',
         'MARTINEZ CABRERA ARTURO',
         'LOPEZ SORIA JOSE ALBERTO',
+        "FONSECA CHAVEZ JOSE DE JESUS"
 
     ],
 
@@ -328,7 +329,6 @@ const SupervisionView = {
                                 <input type="file" 
                                        id="supervisionFoto" 
                                        accept="image/*" 
-                                       capture="environment"
                                        multiple
                                        style="display: none;"
                                        onchange="SupervisionController.handlePhotoUpload(this, App.appState)">

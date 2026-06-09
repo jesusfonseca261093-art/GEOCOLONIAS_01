@@ -64,6 +64,7 @@ const App = {
             encuestaPresentacionVendedor: '',
             encuestaSatisfaccionCliente: '',
             evidenciaFoto: null,
+            evidenciasFotos: [],
             firmaSupervisor: null
         },
         firmaChofer: null,
