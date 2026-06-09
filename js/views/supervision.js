@@ -327,16 +327,29 @@ const SupervisionView = {
                             
                             <div class="form-group">
                                 <input type="file" 
-                                       id="supervisionFoto" 
+                                       id="supervisionFotoCamara" 
+                                       accept="image/*" 
+                                       capture="environment"
+                                       style="display: none;"
+                                       onchange="SupervisionController.handlePhotoUpload(this, App.appState)">
+
+                                <input type="file" 
+                                       id="supervisionFotoGaleria" 
                                        accept="image/*" 
                                        multiple
                                        style="display: none;"
                                        onchange="SupervisionController.handlePhotoUpload(this, App.appState)">
                                 
                                 <button type="button" 
-                                        onclick="document.getElementById('supervisionFoto').click()"
+                                        onclick="document.getElementById('supervisionFotoCamara').click()"
                                         style="width: 100%; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; font-size: 14px; color: #64748b; margin-bottom: 10px;">
-                                    📷 Tomar / Adjuntar Fotos (Máx. 5)
+                                    <i class='bx bx-camera'></i> Tomar foto
+                                </button>
+
+                                <button type="button" 
+                                        onclick="document.getElementById('supervisionFotoGaleria').click()"
+                                        style="width: 100%; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; font-size: 14px; color: #64748b; margin-bottom: 10px;">
+                                    <i class='bx bx-image-add'></i> Seleccionar de galeria
                                 </button>
                                 
                                 <!-- Grid de fotos seleccionadas -->
