@@ -19,10 +19,10 @@ const HomeView = {
                 <div class="container" style="margin-top: 15px;">
                     <div style="text-align: center; padding: 20px;">
                     <h1 style="font-size: 32px; font-weight: 800; color: #1e293b; margin-bottom: 8px;">
-                        Gen <span style="color: #dc2626;">Checklist</span>
+                        Gen <span style="color: #dc2626;">Supervision</span>
                     </h1>
                     <p style="color: #64748b; font-size: 12px; margin-bottom: 30px;">
-                        Control de unidades - Planta Qro
+                        Control de unidades - Plantas Gen
                     </p>
                     
                     <div class="home-menu-grid">
@@ -35,16 +35,8 @@ const HomeView = {
                                 <i class='bx bx-list-check' style="font-size: 22px;"></i> Nuevo check list
                             </button>
                             
-                            <button onclick="App.goToStep('orden-servicio')" class="btn btn-warning">
-                                <i class='bx bx-wrench' style="font-size: 22px;"></i> Orden de servicio
-                            </button>
-                            
                             <button onclick="App.goToStep('admin-panel')" class="btn" style="background: #0f172a; color: white;">
                                 <i class='bx bx-shield-quarter' style="font-size: 22px;"></i> Panel supervisor
-                            </button>
-                            
-                            <button onclick="App.goToStep('taller-panel')" class="btn" style="background: #334155; color: white;">
-                                <i class='bx bx-car' style="font-size: 22px;"></i> Panel taller
                             </button>
 
                             <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
@@ -85,7 +77,7 @@ const HomeView = {
                     
                     <div class="home-note-card">
                         <p class="home-note-text">
-                            <strong>Nota importante:</strong> Este es un reporte de revisi&oacute;n diaria, por lo que no sustituye al reporte de fallas a taller. Para reportes de fallas, utiliza "Orden de servicio".
+                            <strong>Nota importante:</strong> Este es un reporte de revisi&oacute;n diaria, por lo que no sustituye al reporte de fallas a taller.
                         </p>
                     </div>
                     `}

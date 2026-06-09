@@ -6,6 +6,7 @@ const GeocercasView = {
     searchMarkerLayer: null,
     allKmlData: null, // Guardaremos los datos en memoria para filtrar súper rápido
     currentFilter: 'all',
+    selectedRouteName: null,
 
     render() {
         return `
@@ -301,6 +302,14 @@ const GeocercasView = {
         return match || parts.slice(0, 2).join(', ') || 'Sin colonias especificadas';
     },
 
+    getRouteName(feature) {
+        return String(feature?.properties?.name || '').replace(/[\r\n]+/g, '').trim();
+    },
+
+    isSameRouteName(firstName, secondName) {
+        return this.normalizeText(firstName) === this.normalizeText(secondName);
+    },
+
     escapeHtml(value) {
         const entities = {
             '&': '&amp;',
@@ -395,11 +404,32 @@ const GeocercasView = {
         }
     },
 
+    focusVisibleRoute(routeName) {
+        if (!this.currentKmlLayer || !this.map) return;
+
+        this.currentKmlLayer.eachLayer(layer => {
+            if (layer.feature && this.isSameRouteName(this.getRouteName(layer.feature), routeName)) {
+                this.map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 14 });
+                layer.openPopup();
+            }
+        });
+    },
+
     centrarRuta(routeName) {
+        if (!this.map || !routeName) return;
+
+        this.selectedRouteName = routeName;
+
+        if (this.allKmlData && this.allKmlData.features) {
+            this.applyFilter(this.currentFilter);
+            setTimeout(() => this.focusVisibleRoute(routeName), 100);
+            return;
+        }
+
         if (!this.currentKmlLayer || !this.map) return;
         
         this.currentKmlLayer.eachLayer(layer => {
-            if (layer.feature && (layer.feature.properties.name || '').trim() === routeName) {
+            if (layer.feature && this.isSameRouteName(this.getRouteName(layer.feature), routeName)) {
                 // Hacer zoom al polígono específico
                 this.map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 14 });
                 // Abrir su popup de información
@@ -468,6 +498,7 @@ const GeocercasView = {
     // Función para filtrar rutas
     filterRoutes(filterType, fromSearch = false) {
         this.currentFilter = filterType;
+        this.selectedRouteName = null;
         
         // Limpiar buscador si el usuario hace clic manualmente en un botón
         if (!fromSearch) {
@@ -551,6 +582,7 @@ const GeocercasView = {
 
     // Función al escribir en el buscador
     applySearch() {
+        this.selectedRouteName = null;
         const searchInput = document.getElementById('route-search-input');
         if (searchInput && searchInput.value.trim() !== '') {
             // Si el usuario escribe, forzamos la vista a "Todas las rutas" para que busque globalmente
@@ -706,7 +738,22 @@ const GeocercasView = {
         });
 
         // Dibujar polígonos filtrados en el mapa
-        this.currentKmlLayer = L.geoJSON(filteredFeatures, {
+        const selectedRouteName = this.selectedRouteName;
+        let mapFeatures = filteredFeatures;
+
+        if (selectedRouteName) {
+            const selectedFeatures = filteredFeatures.filter(feature =>
+                this.isSameRouteName(this.getRouteName(feature), selectedRouteName)
+            );
+
+            if (selectedFeatures.length > 0) {
+                mapFeatures = selectedFeatures;
+            } else {
+                this.selectedRouteName = null;
+            }
+        }
+
+        this.currentKmlLayer = L.geoJSON(mapFeatures, {
             style: (feature) => {
                 // Pintar cada polígono del color de su supervisor
                 const sup = (feature.properties.SUPERVISOR || '').toLowerCase();
@@ -800,8 +847,8 @@ const GeocercasView = {
         this.renderSearchMarkers(searchText);
 
         // Ajustar la cámara para que se vean todas las rutas filtradas
-        if (filteredFeatures.length > 0) {
-            if (searchText && filteredFeatures.length === 1) {
+        if (mapFeatures.length > 0) {
+            if (!this.selectedRouteName && searchText && filteredFeatures.length === 1) {
                 const routeName = (filteredFeatures[0].properties.name || '').trim();
                 setTimeout(() => this.centrarRuta(routeName), 100);
             } else {
@@ -818,13 +865,14 @@ const GeocercasView = {
                     return {
                         name,
                         safeName: name.replace(/\\/g, '\\\\').replace(/'/g, "\\'"),
-                        preview: searchText ? this.getColoniaMatchPreview(feature, searchText) : ''
+                        preview: searchText ? this.getColoniaMatchPreview(feature, searchText) : '',
+                        selected: this.selectedRouteName && this.isSameRouteName(name, this.selectedRouteName)
                     };
                 }).sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
                 
                 listContainer.style.display = 'block';
                 listContainer.innerHTML = routeMatches.map(item => `
-                    <div onclick="GeocercasView.centrarRuta('${item.safeName}')" class="route-item-hover" style="padding: 8px; border-radius: 4px; font-size: 11px; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9;">
+                    <div onclick="GeocercasView.centrarRuta('${item.safeName}')" class="route-item-hover" style="padding: 8px; border-radius: 4px; font-size: 11px; color: ${item.selected ? '#1e40af' : '#475569'}; background: ${item.selected ? '#dbeafe' : 'transparent'}; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9;">
                         <span class="route-item-text" style="font-weight: 500;">
                             📍 ${item.name}
                             ${item.preview ? `<span style="display: block; color: #64748b; font-weight: 400; margin-top: 2px;">${item.preview}</span>` : ''}
@@ -845,7 +893,9 @@ const GeocercasView = {
         // Actualizar el contador real en la interfaz
         const countEl = document.getElementById('routesCount');
         if (countEl) {
-            countEl.innerHTML = searchText
+            countEl.innerHTML = this.selectedRouteName
+                ? `Mostrando: <strong>${this.escapeHtml(this.selectedRouteName)}</strong><br><span style="font-size: 11px;">${mapFeatures.length} de ${filteredFeatures.length} rutas del filtro</span>`
+                : searchText
                 ? `Coincidencias: <strong>${filteredFeatures.length}</strong> rutas para "${rawSearchText}"`
                 : `Total: <strong>${filteredFeatures.length}</strong> rutas visibles`;
             if (this.allKmlData.features.length === 0) {
@@ -855,7 +905,9 @@ const GeocercasView = {
 
         const mapLabel = document.querySelector('#mapLabel span:nth-child(2)');
         if (mapLabel) {
-            if (searchText) {
+            if (this.selectedRouteName) {
+                mapLabel.textContent = `Ruta seleccionada: ${this.selectedRouteName}`;
+            } else if (searchText) {
                 mapLabel.textContent = `Busqueda: ${rawSearchText}`;
             } else if (filterType === 'all') {
                 mapLabel.textContent = 'Geocercas: Rutas de pipas y cilindros';
