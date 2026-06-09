@@ -1,6 +1,14 @@
 // success.js - Vistas de éxito para diferentes procesos
 
 const SuccessView = {
+    formatTipoVisita(tipoVisita = '') {
+        return tipoVisita === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+    },
+
+    isSupervisionRuta(tipoVisita = '') {
+        return this.formatTipoVisita(tipoVisita) === 'Supervisión en Ruta';
+    },
+
     // Vista de éxito para checklist
     renderChecklistSuccess() {
         return `
@@ -70,8 +78,10 @@ const SuccessView = {
     
     // Vista de éxito para supervisión en campo
     renderSupervisionSuccess(ultimo = null) {
-        const tipoVisita = ultimo?.tipoVisita || 'Atención a Queja';
+        const tipoVisita = this.formatTipoVisita(ultimo?.tipoVisita);
         const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const etiquetaPersona = esSupervisionRuta ? 'Operador / Chofer' : 'Cliente';
         
         return `
             <div class="container">
@@ -96,11 +106,11 @@ const SuccessView = {
                             <p style="font-size: 12px; margin: 5px 0;"><strong>📝 Tipo de Visita:</strong> ${tipoVisita}</p>
                             ${ultimo.ruta ? `<p style="font-size: 12px; margin: 5px 0;"><strong>🛣️ Ruta:</strong> ${ultimo.ruta}</p>` : ''}
                             <p style="font-size: 12px; margin: 5px 0;"><strong>📅 Fecha/Hora:</strong> ${ultimo.fecha || ''} ${ultimo.hora || ''}</p>
-                            <p style="font-size: 12px; margin: 5px 0;"><strong>🆔 Pedido:</strong> ${ultimo.numeroPedido || 'No especificado'}</p>
+                            <p style="font-size: 12px; margin: 5px 0;"><strong>🆔 ${esSupervisionRuta ? 'Económico de Unidad' : 'Pedido'}:</strong> ${ultimo.numeroPedido || 'No especificado'}</p>
                             
                             <div style="border-top: 1px dashed #cbd5e1; margin: 10px 0;"></div>
                             
-                            <h5 style="color: #1e293b; margin: 8px 0 4px;">👤 Datos del Cliente:</h5>
+                            <h5 style="color: #1e293b; margin: 8px 0 4px;">👤 Datos del ${etiquetaPersona}:</h5>
                             <p style="font-size: 12px; margin: 5px 0;"><strong>Nombre:</strong> ${ultimo.nombreCliente || 'No especificado'}</p>
                             <p style="font-size: 12px; margin: 5px 0;"><strong>Teléfono:</strong> ${ultimo.telefonoCliente || 'No especificado'}</p>
                             
@@ -118,9 +128,18 @@ const SuccessView = {
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Detalle de la visita:</strong> ${ultimo.detalleVisita || 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Motivo de la queja:</strong> ${ultimo.motivoQueja || 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Solución brindada:</strong> ${ultimo.solucion || 'No especificada'}</p>
+                            ` : esSupervisionRuta ? `
+                                <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Tipo:</strong> Supervisión en Ruta</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Hallazgos en sitio:</strong> ${ultimo.comentario || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Equipo de seguridad completo:</strong> ${ultimo.revisionEquipoSeguridad || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Presentación e identificación:</strong> ${ultimo.revisionPresentacionIdentificacion || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Unidad limpia/en condiciones:</strong> ${ultimo.revisionUnidadCondiciones || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Documentación del servicio:</strong> ${ultimo.revisionDocumentacionServicio || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Atención y maniobras seguras:</strong> ${ultimo.revisionManejoSeguro || 'No especificado'}</p>
                             ` : `
                                 <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
-                                <p style="font-size: 12px; margin: 5px 0;"><strong>Tipo:</strong> Supervisión de Ruta</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Tipo:</strong> Supervisión en Domicilio</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Hallazgos en sitio:</strong> ${ultimo.comentario || 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Trato del vendedor:</strong> ${ultimo.encuestaTratoVendedor ? `${ultimo.encuestaTratoVendedor}/10` : 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Claridad de información:</strong> ${ultimo.encuestaClaridadVendedor ? `${ultimo.encuestaClaridadVendedor}/10` : 'No especificado'}</p>

@@ -146,7 +146,7 @@ const MapaQuejasView = {
             // 3. Filtro de Búsqueda
             if (App.appState.filterSearch) {
                 const s = App.appState.filterSearch.toLowerCase();
-                return (sup.nombreSupervisor?.toLowerCase().includes(s) || sup.tipoVisita?.toLowerCase().includes(s) || sup.ruta?.toLowerCase().includes(s) || sup.nombreCliente?.toLowerCase().includes(s) || sup.motivoQueja?.toLowerCase().includes(s) || sup.comentario?.toLowerCase().includes(s) || sup.datosPedidosNombre?.toLowerCase().includes(s) || sup.datosPedidosTelefono?.toLowerCase().includes(s) || sup.ubicacion?.toLowerCase().includes(s));
+                return (sup.nombreSupervisor?.toLowerCase().includes(s) || AdminController.formatTipoVisita(sup.tipoVisita).toLowerCase().includes(s) || sup.ruta?.toLowerCase().includes(s) || sup.nombreCliente?.toLowerCase().includes(s) || sup.motivoQueja?.toLowerCase().includes(s) || sup.comentario?.toLowerCase().includes(s) || sup.datosPedidosNombre?.toLowerCase().includes(s) || sup.datosPedidosTelefono?.toLowerCase().includes(s) || sup.ubicacion?.toLowerCase().includes(s));
             }
 
             // 4. Filtro de Tarjetas Estadísticas (Con Evidencia / Sin Evidencia)
@@ -209,8 +209,9 @@ const MapaQuejasView = {
     // Crear contenido del popup
     crearPopupContent(sup) {
         const isTest = AdminController.isTestRecord(sup);
-        const tipoVisita = sup.tipoVisita || 'Atención a Queja';
+        const tipoVisita = AdminController.formatTipoVisita(sup.tipoVisita);
         const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionRuta = AdminController.isSupervisionRuta(tipoVisita);
         let fotoHtml = '';
         if (sup.evidenciasFotos && sup.evidenciasFotos.length > 0) {
             fotoHtml = `<img src="${sup.evidenciasFotos[0].data}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
@@ -234,8 +235,8 @@ const MapaQuejasView = {
                     <p style="margin: 5px 0;"><strong>📅 Fecha:</strong> ${sup.fecha || ''} ${sup.hora || ''}</p>
                     <p style="margin: 5px 0;"><strong>📝 Tipo:</strong> ${tipoVisita}</p>
                     ${sup.ruta ? `<p style="margin: 5px 0;"><strong>🛣️ Ruta:</strong> ${sup.ruta}</p>` : ''}
-                    <p style="margin: 5px 0;"><strong>🆔 Pedido:</strong> ${sup.numeroPedido || 'N/A'}</p>
-                    <p style="margin: 5px 0;"><strong>👤 Cliente:</strong> ${sup.nombreCliente || ''}</p>
+                    <p style="margin: 5px 0;"><strong>🆔 ${esSupervisionRuta ? 'Económico de Unidad' : 'Pedido'}:</strong> ${sup.numeroPedido || 'N/A'}</p>
+                    <p style="margin: 5px 0;"><strong>👤 ${esSupervisionRuta ? 'Operador/Chofer' : 'Cliente'}:</strong> ${sup.nombreCliente || ''}</p>
                     <p style="margin: 5px 0;"><strong>📞 Teléfono:</strong> ${sup.telefonoCliente || ''}</p>
                     
                     ${esAtencionQueja ? `
@@ -245,6 +246,18 @@ const MapaQuejasView = {
 
                         <div style="margin: 8px 0; padding: 5px; background: #dcfce7; border-radius: 4px;">
                             <strong>✅ Solución:</strong> ${sup.solucion || 'No especificada'}
+                        </div>
+                    ` : esSupervisionRuta ? `
+                        <div style="margin: 8px 0; padding: 5px; background: #eef2ff; border-radius: 4px;">
+                            <strong>🔎 Hallazgos:</strong> ${sup.comentario || 'No especificado'}
+                        </div>
+
+                        <div style="margin: 8px 0; padding: 5px; background: #f8fafc; border-radius: 4px;">
+                            <strong>✅ Equipo de seguridad:</strong> ${sup.revisionEquipoSeguridad || 'No especificado'}<br>
+                            <strong>✅ Presentación/ID:</strong> ${sup.revisionPresentacionIdentificacion || 'No especificado'}<br>
+                            <strong>✅ Unidad:</strong> ${sup.revisionUnidadCondiciones || 'No especificado'}<br>
+                            <strong>✅ Documentación:</strong> ${sup.revisionDocumentacionServicio || 'No especificado'}<br>
+                            <strong>✅ Manejo seguro:</strong> ${sup.revisionManejoSeguro || 'No especificado'}
                         </div>
                     ` : `
                         <div style="margin: 8px 0; padding: 5px; background: #eef2ff; border-radius: 4px;">

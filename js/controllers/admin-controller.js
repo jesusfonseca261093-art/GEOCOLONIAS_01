@@ -14,6 +14,35 @@ const AdminController = {
         return op.includes('prueba') || sup.includes('prueba') || cli.includes('prueba') || uni.includes('prueba');
     },
 
+    formatTipoVisita(tipoVisita = '') {
+        return tipoVisita === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+    },
+
+    isSupervisionRuta(tipoVisita = '') {
+        return this.formatTipoVisita(tipoVisita) === 'Supervisión en Ruta';
+    },
+
+    isSupervisionDomicilio(tipoVisita = '') {
+        return this.formatTipoVisita(tipoVisita) === 'Supervisión en Domicilio';
+    },
+
+    getRevisionOperadorFields() {
+        return [
+            'revisionEquipoSeguridad',
+            'revisionPresentacionIdentificacion',
+            'revisionUnidadCondiciones',
+            'revisionDocumentacionServicio',
+            'revisionManejoSeguro'
+        ];
+    },
+
+    getRevisionOperadorSummary(item) {
+        const valores = this.getRevisionOperadorFields().map(field => item?.[field]).filter(Boolean);
+        if (!valores.length) return '';
+        const cumplidos = valores.filter(value => value === 'Sí').length;
+        return `${cumplidos}/${valores.length} puntos cumplidos`;
+    },
+
     // Cambiar pestaña
     switchTab(tab) {
         App.appState.activeTab = tab;
@@ -250,7 +279,7 @@ const AdminController = {
                 const s = App.appState.filterSearch.toLowerCase();
                 if (App.appState.activeTab === 'supervisiones') {
                     return (i.nombreSupervisor?.toLowerCase().includes(s) || 
-                            i.tipoVisita?.toLowerCase().includes(s) ||
+                            this.formatTipoVisita(i.tipoVisita).toLowerCase().includes(s) ||
                             i.ruta?.toLowerCase().includes(s) ||
                             i.nombreCliente?.toLowerCase().includes(s) || 
                             i.numeroPedido?.toLowerCase().includes(s) || 
@@ -758,8 +787,9 @@ const AdminController = {
     renderSupervisionDetails(s) {
         const isTest = this.isTestRecord(s);
         const contentId = `supervision-content-${s.id || Date.now()}`;
-        const tipoVisita = s.tipoVisita || 'Atención a Queja';
+        const tipoVisita = this.formatTipoVisita(s.tipoVisita);
         const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
         return `
             <div id="${contentId}" style="padding: 25px; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: ${isTest ? '#faf5ff' : 'white'}; ${isTest ? 'border: 2px solid #d8b4fe; border-radius: 12px;' : ''}">
                 ${isTest ? `
@@ -790,15 +820,15 @@ const AdminController = {
                         </div>
                     </div>
                     
-                    <!-- Pedido y cliente -->
+                    <!-- Pedido y persona revisada -->
                     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 15px;">
                         <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
-                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">📦 PEDIDO</div>
-                            <div style="font-weight: bold; font-size: 16px;">${s.numeroPedido || '16394332'}</div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">📦 ${esSupervisionRuta ? 'ECONÓMICO DE UNIDAD' : 'PEDIDO'}</div>
+                            <div style="font-weight: bold; font-size: 16px;">${s.numeroPedido || 'N/A'}</div>
                         </div>
                         <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
-                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">👤 CLIENTE</div>
-                            <div style="font-weight: bold; font-size: 14px;">${s.nombreCliente || 'GAS EXPRES NIETO'}</div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">👤 ${esSupervisionRuta ? 'OPERADOR / CHOFER' : 'CLIENTE'}</div>
+                            <div style="font-weight: bold; font-size: 14px;">${s.nombreCliente || 'No especificado'}</div>
                         </div>
                     </div>
                     
@@ -806,8 +836,8 @@ const AdminController = {
                     <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
                         <span style="background: #e2e8f0; padding: 8px; border-radius: 50%;">📞</span>
                         <div>
-                            <div style="font-size: 11px; color: #64748b;">TELÉFONO</div>
-                            <div style="font-weight: bold;">${s.telefonoCliente || '4421639433'}</div>
+                            <div style="font-size: 11px; color: #64748b;">${esSupervisionRuta ? 'TELÉFONO DEL OPERADOR' : 'TELÉFONO'}</div>
+                            <div style="font-weight: bold;">${s.telefonoCliente || 'No especificado'}</div>
                         </div>
                     </div>
                     
@@ -832,6 +862,25 @@ const AdminController = {
                             <p style="margin: 5px 0 0 0; color: #14532d; font-size: 14px;">
                                 ${s.solucion || 'SE REVISA NOTAS DE CONSUMO Y SE REALIZA REPOSICIÓN DE GAS 20 KG.'}
                             </p>
+                        </div>
+                    ` : esSupervisionRuta ? `
+                        <div style="background: #eef2ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4f46e5;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                                <span style="color: #4f46e5; font-size: 18px;">🔎</span>
+                                <span style="font-weight: bold; color: #312e81;">HALLAZGOS EN SITIO</span>
+                            </div>
+                            <p style="margin: 5px 0 0 0; color: #312e81; font-size: 14px;">
+                                ${s.comentario || 'No especificado'}
+                            </p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #64748b;">
+                            <div style="font-weight: bold; color: #0f172a; margin-bottom: 8px;">Revisión del supervisor al operador</div>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Equipo de seguridad completo:</strong> ${s.revisionEquipoSeguridad || 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Presentación e identificación:</strong> ${s.revisionPresentacionIdentificacion || 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Unidad limpia/en condiciones:</strong> ${s.revisionUnidadCondiciones || 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Documentación del servicio:</strong> ${s.revisionDocumentacionServicio || 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Atención y maniobras seguras:</strong> ${s.revisionManejoSeguro || 'No especificado'}</p>
                         </div>
                     ` : `
                         <div style="background: #eef2ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4f46e5;">
@@ -973,7 +1022,7 @@ const AdminController = {
                                            i.unidad?.toLowerCase().includes(s) || 
                                            i.folio?.toString().includes(s) || 
                                            i.nombreSupervisor?.toLowerCase().includes(s) ||
-                                           i.tipoVisita?.toLowerCase().includes(s) ||
+                                           this.formatTipoVisita(i.tipoVisita).toLowerCase().includes(s) ||
                                            i.ruta?.toLowerCase().includes(s) ||
                                            i.comentario?.toLowerCase().includes(s) ||
                                            i.datosPedidosNombre?.toLowerCase().includes(s) ||
@@ -1035,8 +1084,8 @@ const AdminController = {
     
     exportToCSVFormat(d,t) { 
         if (t === 'supervisiones') {
-            return 'Fecha,Hora,Supervisor,Tipo de Visita,Ruta,Pedido,Cliente,Teléfono,Motivo,Solución,Hallazgos,Trato Vendedor,Claridad Información,Tiempo Atención,Presentación Vendedor,Satisfacción General,Servicio Calle Recibido,Nombre Pedidos,Teléfono Pedidos,Dirección Pedidos,Ubicación\n' +
-                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${i.tipoVisita || 'Atención a Queja'}","${i.ruta || ''}","${i.numeroPedido}","${i.nombreCliente}","${i.telefonoCliente}","${i.motivoQueja || ''}","${i.solucion || ''}","${i.comentario || ''}","${i.encuestaTratoVendedor || ''}","${i.encuestaClaridadVendedor || ''}","${i.encuestaTiempoServicio || ''}","${i.encuestaPresentacionVendedor || ''}","${i.encuestaSatisfaccionCliente || ''}","${i.servicioCalleRecibido || ''}","${i.datosPedidosNombre || ''}","${i.datosPedidosTelefono || ''}","${i.datosPedidosDireccion || ''}","${i.ubicacion}"`).join('\n');
+            return 'Fecha,Hora,Supervisor,Tipo de Visita,Ruta,Pedido/Económico,Cliente/Operador,Teléfono,Motivo,Solución,Hallazgos,Trato Vendedor,Claridad Información,Tiempo Atención,Presentación Vendedor,Satisfacción General,Servicio Calle Recibido,Nombre Pedidos,Teléfono Pedidos,Dirección Pedidos,Equipo Seguridad,Identificación Operador,Unidad Condiciones,Documentación Servicio,Manejo Seguro,Ubicación\n' +
+                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${this.formatTipoVisita(i.tipoVisita)}","${i.ruta || ''}","${i.numeroPedido || ''}","${i.nombreCliente || ''}","${i.telefonoCliente || ''}","${i.motivoQueja || ''}","${i.solucion || ''}","${i.comentario || ''}","${i.encuestaTratoVendedor || ''}","${i.encuestaClaridadVendedor || ''}","${i.encuestaTiempoServicio || ''}","${i.encuestaPresentacionVendedor || ''}","${i.encuestaSatisfaccionCliente || ''}","${i.servicioCalleRecibido || ''}","${i.datosPedidosNombre || ''}","${i.datosPedidosTelefono || ''}","${i.datosPedidosDireccion || ''}","${i.revisionEquipoSeguridad || ''}","${i.revisionPresentacionIdentificacion || ''}","${i.revisionUnidadCondiciones || ''}","${i.revisionDocumentacionServicio || ''}","${i.revisionManejoSeguro || ''}","${i.ubicacion || ''}"`).join('\n');
         }
         return '';
     },

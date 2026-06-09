@@ -43,18 +43,56 @@ const SupervisionView = {
         `;
     },
 
+    renderSiNoOptions(selectedValue = '') {
+        return ['Sí', 'No'].map(value => `
+            <option value="${value}" ${selectedValue === value ? 'selected' : ''}>${value}</option>
+        `).join('');
+    },
+
+    renderRevisionOperadorPregunta(field, label, data, required = false) {
+        return `
+            <div class="form-group">
+                <label>${label}</label>
+                <select id="${field}"
+                        onchange="SupervisionController.updateFormData('${field}', this.value, App.appState)"
+                        ${required ? 'required' : ''}>
+                    <option value="" ${data[field] ? '' : 'selected'} disabled>Selecciona Sí o No</option>
+                    ${this.renderSiNoOptions(data[field] || '')}
+                </select>
+            </div>
+        `;
+    },
+
+    isSupervisionDomicilio(tipoVisita = '') {
+        return tipoVisita === 'Supervisión en Domicilio' || tipoVisita === 'Supervisión de Ruta';
+    },
+
+    isSupervisionRuta(tipoVisita = '') {
+        return tipoVisita === 'Supervisión en Ruta';
+    },
+
+    formatTipoVisita(tipoVisita = '') {
+        return this.isSupervisionDomicilio(tipoVisita) ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+    },
+
     // Vista del formulario de supervisión
     renderForm(appState) {
         const data = appState.supervisionData;
-        if (!data.tipoVisita) {
-            data.tipoVisita = 'Atención a Queja';
-        }
+        data.tipoVisita = this.formatTipoVisita(data.tipoVisita);
         const esAtencionQueja = data.tipoVisita === 'Atención a Queja';
-        const esSupervisionRuta = data.tipoVisita === 'Supervisión de Ruta';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(data.tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(data.tipoVisita);
+        const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
         if (!data.servicioCalleRecibido) {
             data.servicioCalleRecibido = 'No';
         }
-        const mostrarDatosPedidos = esSupervisionRuta && data.servicioCalleRecibido === 'Sí';
+        const mostrarDatosPedidos = esSupervisionDomicilio && data.servicioCalleRecibido === 'Sí';
+        const tituloDatosPersona = esSupervisionRuta ? 'Datos del Operador / Chofer' : 'Datos del Cliente';
+        const etiquetaPedido = esSupervisionRuta ? 'Económico de Unidad' : 'Número de Pedido';
+        const etiquetaNombrePersona = esSupervisionRuta ? 'Nombre del Operador / Chofer' : 'Nombre del Cliente';
+        const etiquetaTelefonoPersona = esSupervisionRuta ? 'Teléfono del Operador' : 'Teléfono del Cliente';
+        const placeholderPedido = esSupervisionRuta ? 'Ej: QI-1235' : 'Ej: 12345';
+        const placeholderNombrePersona = esSupervisionRuta ? 'Nombre del operador o chofer' : 'Nombre completo';
         
         // Actualizar fecha y hora si no existen
         const now = new Date();
@@ -136,28 +174,29 @@ const SupervisionView = {
                                             onchange="SupervisionController.handleTipoVisitaChange(this.value, App.appState)"
                                             required>
                                         <option value="Atención a Queja" ${data.tipoVisita === 'Atención a Queja' ? 'selected' : ''}>Atención a Queja</option>
-                                        <option value="Supervisión de Ruta" ${data.tipoVisita === 'Supervisión de Ruta' ? 'selected' : ''}>Supervisión de Ruta</option>
+                                        <option value="Supervisión en Domicilio" ${esSupervisionDomicilio ? 'selected' : ''}>Supervisión en Domicilio</option>
+                                        <option value="Supervisión en Ruta" ${esSupervisionRuta ? 'selected' : ''}>Supervisión en Ruta</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Datos del Cliente -->
+                        <!-- Datos del Cliente / Operador -->
                         <div class="card">
-                            <h3 style="margin-bottom: 16px; color: #1e293b;">👤 Datos del Cliente</h3>
+                            <h3 id="datosPersonaTitle" style="margin-bottom: 16px; color: #1e293b;">👤 ${tituloDatosPersona}</h3>
                             
                             <div class="form-group">
-                                <label>Número de Pedido</label>
+                                <label id="numeroPedidoLabel">${etiquetaPedido}</label>
                                 <input type="text" 
                                        id="numeroPedido"
                                        value="${data.numeroPedido || ''}"
                                        oninput="SupervisionController.updateFormData('numeroPedido', this.value, App.appState)"
-                                       placeholder="Ej: 12345"
-                                       required>
+                                       placeholder="${placeholderPedido}"
+                                       ${esSupervisionRuta ? '' : 'required'}>
                             </div>
 
                             <div class="form-group">
-                                <label>Teléfono del Cliente</label>
+                                <label id="telefonoClienteLabel">${etiquetaTelefonoPersona}</label>
                                 <input type="tel" 
                                        id="telefonoCliente"
                                        value="${data.telefonoCliente || ''}"
@@ -167,12 +206,12 @@ const SupervisionView = {
                             </div>
 
                             <div class="form-group">
-                                <label>Nombre del Cliente</label>
+                                <label id="nombreClienteLabel">${etiquetaNombrePersona}</label>
                                 <input type="text" 
                                        id="nombreCliente"
                                        value="${data.nombreCliente || ''}"
                                        oninput="SupervisionController.updateFormData('nombreCliente', this.value, App.appState)"
-                                       placeholder="Nombre completo"
+                                       placeholder="${placeholderNombrePersona}"
                                        required>
                             </div>
 
@@ -252,9 +291,9 @@ const SupervisionView = {
                             </div>
                         </div>
 
-                        <!-- Detalles de Supervisión de Ruta -->
-                        <div class="card" id="detallesRutaCard" style="${esSupervisionRuta ? '' : 'display: none;'}">
-                            <h3 style="margin-bottom: 16px; color: #1e293b;">Supervisión de Ruta</h3>
+                        <!-- Detalles de Supervisión en Domicilio / Ruta -->
+                        <div class="card" id="detallesRutaCard" style="${esSupervisionCampo ? '' : 'display: none;'}">
+                            <h3 id="detallesRutaTitle" style="margin-bottom: 16px; color: #1e293b;">${esSupervisionRuta ? 'Supervisión en Ruta' : 'Supervisión en Domicilio'}</h3>
 
                             <div class="form-group">
                                 <label>Comentarios de lo encontrado en sitio</label>
@@ -262,10 +301,10 @@ const SupervisionView = {
                                           oninput="SupervisionController.updateFormData('comentario', this.value, App.appState)"
                                           placeholder="Describe qué encontró el supervisor en sitio, condiciones del servicio, atención y observaciones."
                                           rows="4"
-                                          ${esSupervisionRuta ? 'required' : ''}>${data.comentario || ''}</textarea>
+                                          ${esSupervisionCampo ? 'required' : ''}>${data.comentario || ''}</textarea>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group" id="servicioCalleBlock" style="${esSupervisionDomicilio ? '' : 'display: none;'}">
                                 <label>¿El servicio es de calle?</label>
                                 <select id="servicioCalleRecibido"
                                         onchange="SupervisionController.handleServicioCalleChange(this.value, App.appState)">
@@ -309,15 +348,27 @@ const SupervisionView = {
                                 </div>
                             </div>
 
-                            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <div id="encuestaClienteCard" style="${esSupervisionDomicilio ? '' : 'display: none;'} padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
                                 <div style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 10px;">Encuesta al cliente</div>
                                 <p style="font-size: 10px; color: #64748b; margin: 0 0 10px;">1 = Deficiente · 10 = Excelente</p>
 
-                                ${this.renderEncuestaPregunta('encuestaTratoVendedor', '¿Cómo fue el trato del vendedor?', data, esSupervisionRuta)}
-                                ${this.renderEncuestaPregunta('encuestaClaridadVendedor', '¿El vendedor explicó claramente la información del servicio?', data, esSupervisionRuta)}
-                                ${this.renderEncuestaPregunta('encuestaTiempoServicio', '¿Cómo califica el tiempo de atención del servicio?', data, esSupervisionRuta)}
-                                ${this.renderEncuestaPregunta('encuestaPresentacionVendedor', '¿Cómo fue la presentación e identificación del vendedor?', data, esSupervisionRuta)}
-                                ${this.renderEncuestaPregunta('encuestaSatisfaccionCliente', '¿Qué tan satisfecho quedó con el servicio recibido?', data, esSupervisionRuta)}
+                                ${this.renderEncuestaPregunta('encuestaTratoVendedor', '¿Cómo fue el trato del vendedor?', data, esSupervisionDomicilio)}
+                                ${this.renderEncuestaPregunta('encuestaClaridadVendedor', '¿El vendedor explicó claramente la información del servicio?', data, esSupervisionDomicilio)}
+                                ${this.renderEncuestaPregunta('encuestaTiempoServicio', '¿Cómo califica el tiempo de atención del servicio?', data, esSupervisionDomicilio)}
+                                ${this.renderEncuestaPregunta('encuestaPresentacionVendedor', '¿Cómo fue la presentación e identificación del vendedor?', data, esSupervisionDomicilio)}
+                                ${this.renderEncuestaPregunta('encuestaSatisfaccionCliente', '¿Qué tan satisfecho quedó con el servicio recibido?', data, esSupervisionDomicilio)}
+                            </div>
+
+                            <div id="revisionOperadorCard" style="${esSupervisionRuta ? '' : 'display: none;'} padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 10px;">Revisión del supervisor al operador</div>
+                                <p style="font-size: 10px; color: #64748b; margin: 0 0 10px;">Marca Sí o No según lo observado en sitio.</p>
+
+                                ${this.renderRevisionOperadorPregunta('revisionEquipoSeguridad', '¿Cuenta con equipo de seguridad completo?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionPresentacionIdentificacion', '¿Tiene buena presentación e identificación visible?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionUnidadCondiciones', '¿La unidad está limpia y en condiciones adecuadas?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionDocumentacionServicio', '¿Trae documentación, notas o datos del servicio en orden?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionManejoSeguro', '¿Realiza la atención y maniobras de forma segura?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionManejoSeguro', '¿Tiene caja de seguridad?', data, esSupervisionRuta)}
                             </div>
                         </div>
                         

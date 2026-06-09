@@ -785,8 +785,9 @@ const AdminView = {
         } else {
             // SUPERVISIONES
             return items.map(supervision => {
-                const tipoVisita = supervision.tipoVisita || 'Atención a Queja';
+                const tipoVisita = AdminController.formatTipoVisita(supervision.tipoVisita);
                 const esAtencionQueja = tipoVisita === 'Atención a Queja';
+                const esSupervisionRuta = AdminController.isSupervisionRuta(tipoVisita);
                 const encuestaScores = [
                     supervision.encuestaTratoVendedor,
                     supervision.encuestaClaridadVendedor,
@@ -797,6 +798,7 @@ const AdminView = {
                 const promedioEncuesta = encuestaScores.length
                     ? (encuestaScores.reduce((total, score) => total + score, 0) / encuestaScores.length).toFixed(1)
                     : '';
+                const revisionOperador = AdminController.getRevisionOperadorSummary(supervision);
                 return `
                 <div class="report-card" style="border-left: 4px solid #0867ec;">
                     <div class="report-header">
@@ -807,7 +809,7 @@ const AdminView = {
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <div class="report-unit">Pedido: ${supervision.numeroPedido || 'N/A'}</div>
+                            <div class="report-unit">${esSupervisionRuta ? 'Unidad' : 'Pedido'}: ${supervision.numeroPedido || 'N/A'}</div>
                             <div style="font-size: 12px; color: #64748b;">${supervision.nombreCliente || ''}</div>
                         </div>
                     </div>
@@ -836,8 +838,12 @@ const AdminView = {
                         </div>
 
                         <div style="margin: 8px 0; padding: 8px; background: #f8fafc; border-radius: 6px; font-size: 12px; color: #334155;">
+                            ${esSupervisionRuta ? `
+                                <strong>✅ Revisión operador:</strong> ${revisionOperador || 'No especificada'}
+                            ` : `
                             <strong>⭐ Encuesta cliente:</strong> ${promedioEncuesta ? `${promedioEncuesta}/10 promedio` : 'No especificada'}
                             ${supervision.servicioCalleRecibido === 'Sí' ? '<br><strong>🧾 Para pedidos:</strong> Sí' : ''}
+                            `}
                         </div>
                     `}
                     

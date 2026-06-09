@@ -4,13 +4,41 @@ const SupervisionController = {
     // Clave de acceso para supervisión
     SUPERVISION_KEY: "nieto2025",
 
-    ENCUESTA_RUTA_FIELDS: [
+    ENCUESTA_DOMICILIO_FIELDS: [
         'encuestaTratoVendedor',
         'encuestaClaridadVendedor',
         'encuestaTiempoServicio',
         'encuestaPresentacionVendedor',
         'encuestaSatisfaccionCliente'
     ],
+
+    REVISION_OPERADOR_FIELDS: [
+        'revisionEquipoSeguridad',
+        'revisionPresentacionIdentificacion',
+        'revisionUnidadCondiciones',
+        'revisionDocumentacionServicio',
+        'revisionManejoSeguro'
+    ],
+
+    TIPO_SUPERVISION_DOMICILIO: 'Supervisión en Domicilio',
+    TIPO_SUPERVISION_RUTA: 'Supervisión en Ruta',
+    TIPO_SUPERVISION_RUTA_ANTERIOR: 'Supervisión de Ruta',
+
+    isSupervisionDomicilio(tipoVisita = '') {
+        return tipoVisita === this.TIPO_SUPERVISION_DOMICILIO || tipoVisita === this.TIPO_SUPERVISION_RUTA_ANTERIOR;
+    },
+
+    isSupervisionRuta(tipoVisita = '') {
+        return tipoVisita === this.TIPO_SUPERVISION_RUTA;
+    },
+
+    isSupervisionCampo(tipoVisita = '') {
+        return this.isSupervisionDomicilio(tipoVisita) || this.isSupervisionRuta(tipoVisita);
+    },
+
+    formatTipoVisita(tipoVisita = '') {
+        return this.isSupervisionDomicilio(tipoVisita) ? this.TIPO_SUPERVISION_DOMICILIO : (tipoVisita || 'Atención a Queja');
+    },
     
     // Variable para almacenar las coordenadas actuales
     currentLocation: {
@@ -188,17 +216,50 @@ const SupervisionController = {
     },
 
     handleTipoVisitaChange(value, appState) {
-        this.updateFormData('tipoVisita', value, appState);
+        const tipoVisita = this.formatTipoVisita(value);
+        this.updateFormData('tipoVisita', tipoVisita, appState);
 
-        const esAtencionQueja = value === 'Atención a Queja';
-        const esSupervisionRuta = value === 'Supervisión de Ruta';
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
         const detallesQuejaCard = document.getElementById('detallesQuejaCard');
         if (detallesQuejaCard) {
             detallesQuejaCard.style.display = esAtencionQueja ? '' : 'none';
         }
         const detallesRutaCard = document.getElementById('detallesRutaCard');
         if (detallesRutaCard) {
-            detallesRutaCard.style.display = esSupervisionRuta ? '' : 'none';
+            detallesRutaCard.style.display = esSupervisionCampo ? '' : 'none';
+        }
+
+        const detallesRutaTitle = document.getElementById('detallesRutaTitle');
+        if (detallesRutaTitle) {
+            detallesRutaTitle.textContent = esSupervisionRuta ? 'Supervisión en Ruta' : 'Supervisión en Domicilio';
+        }
+
+        const datosPersonaTitle = document.getElementById('datosPersonaTitle');
+        if (datosPersonaTitle) {
+            datosPersonaTitle.textContent = esSupervisionRuta ? '👤 Datos del Operador / Chofer' : '👤 Datos del Cliente';
+        }
+
+        const numeroPedidoLabel = document.getElementById('numeroPedidoLabel');
+        if (numeroPedidoLabel) numeroPedidoLabel.textContent = esSupervisionRuta ? 'Económico de Unidad' : 'Número de Pedido';
+
+        const numeroPedidoField = document.getElementById('numeroPedido');
+        if (numeroPedidoField) {
+            numeroPedidoField.required = !esSupervisionRuta;
+            numeroPedidoField.placeholder = esSupervisionRuta ? 'Ej: QI-1235' : 'Ej: 12345';
+        }
+
+        const telefonoClienteLabel = document.getElementById('telefonoClienteLabel');
+        if (telefonoClienteLabel) telefonoClienteLabel.textContent = esSupervisionRuta ? 'Teléfono del Operador' : 'Teléfono del Cliente';
+
+        const nombreClienteLabel = document.getElementById('nombreClienteLabel');
+        if (nombreClienteLabel) nombreClienteLabel.textContent = esSupervisionRuta ? 'Nombre del Operador / Chofer' : 'Nombre del Cliente';
+
+        const nombreClienteField = document.getElementById('nombreCliente');
+        if (nombreClienteField) {
+            nombreClienteField.placeholder = esSupervisionRuta ? 'Nombre del operador o chofer' : 'Nombre completo';
         }
 
         ['motivoQueja', 'solucion'].forEach(fieldId => {
@@ -214,29 +275,54 @@ const SupervisionController = {
         }
 
         const comentarioField = document.getElementById('comentario');
-        if (comentarioField) comentarioField.required = esSupervisionRuta;
+        if (comentarioField) comentarioField.required = esSupervisionCampo;
 
-        this.ENCUESTA_RUTA_FIELDS.forEach(fieldId => {
+        const servicioCalleBlock = document.getElementById('servicioCalleBlock');
+        if (servicioCalleBlock) servicioCalleBlock.style.display = esSupervisionDomicilio ? '' : 'none';
+
+        const encuestaClienteCard = document.getElementById('encuestaClienteCard');
+        if (encuestaClienteCard) encuestaClienteCard.style.display = esSupervisionDomicilio ? '' : 'none';
+
+        const revisionOperadorCard = document.getElementById('revisionOperadorCard');
+        if (revisionOperadorCard) revisionOperadorCard.style.display = esSupervisionRuta ? '' : 'none';
+
+        this.ENCUESTA_DOMICILIO_FIELDS.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) field.required = esSupervisionDomicilio;
+        });
+
+        this.REVISION_OPERADOR_FIELDS.forEach(fieldId => {
             const field = document.getElementById(fieldId);
             if (field) field.required = esSupervisionRuta;
         });
 
-        if (!esSupervisionRuta) {
+        if (!esSupervisionDomicilio) {
             appState.supervisionData.servicioCalleRecibido = 'No';
             appState.supervisionData.datosPedidosNombre = '';
             appState.supervisionData.datosPedidosTelefono = '';
             appState.supervisionData.datosPedidosDireccion = '';
-            this.ENCUESTA_RUTA_FIELDS.forEach(field => {
+            this.handleServicioCalleChange('No', appState);
+        }
+
+        if (!esSupervisionCampo) {
+            this.ENCUESTA_DOMICILIO_FIELDS.forEach(field => {
                 appState.supervisionData[field] = '';
             });
-            this.handleServicioCalleChange('No', appState);
+            this.REVISION_OPERADOR_FIELDS.forEach(field => {
+                appState.supervisionData[field] = '';
+            });
         }
     },
 
     handleServicioCalleChange(value, appState) {
         this.updateFormData('servicioCalleRecibido', value, appState);
 
-        const mostrarDatosPedidos = value === 'Sí';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(appState.supervisionData.tipoVisita);
+        const mostrarDatosPedidos = esSupervisionDomicilio && value === 'Sí';
+        const servicioCalleField = document.getElementById('servicioCalleRecibido');
+        if (servicioCalleField && !esSupervisionDomicilio) {
+            servicioCalleField.value = 'No';
+        }
         const datosPedidosCliente = document.getElementById('datosPedidosCliente');
         if (datosPedidosCliente) {
             datosPedidosCliente.style.display = mostrarDatosPedidos ? '' : 'none';
@@ -400,6 +486,8 @@ const SupervisionController = {
 
     // Validar formulario
     validateForm(data) {
+        data.tipoVisita = this.formatTipoVisita(data.tipoVisita);
+        const tipoVisita = data.tipoVisita;
         const now = new Date();
         if (!data.fecha) {
             data.fecha = now.toISOString().split('T')[0];
@@ -417,27 +505,30 @@ const SupervisionController = {
             return false;
         }
 
-        if (!data.tipoVisita?.trim()) {
+        if (!tipoVisita?.trim()) {
             alert('❌ El tipo de visita es obligatorio');
             return false;
         }
         
-        if (!data.numeroPedido?.trim()) {
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+
+        if (!esSupervisionRuta && !data.numeroPedido?.trim()) {
             alert('❌ El número de pedido es obligatorio');
             return false;
         }
         
         if (!data.telefonoCliente?.trim()) {
-            alert('❌ El teléfono del cliente es obligatorio');
+            alert(esSupervisionRuta ? '❌ El teléfono del operador es obligatorio' : '❌ El teléfono del cliente es obligatorio');
             return false;
         }
         
         if (!data.nombreCliente?.trim()) {
-            alert('❌ El nombre del cliente es obligatorio');
+            alert(esSupervisionRuta ? '❌ El nombre del operador es obligatorio' : '❌ El nombre del cliente es obligatorio');
             return false;
         }
 
-        if (data.tipoVisita === 'Atención a Queja') {
+        if (tipoVisita === 'Atención a Queja') {
             if (!data.motivoQueja?.trim()) {
                 alert('❌ El motivo de la queja es obligatorio');
                 return false;
@@ -449,13 +540,13 @@ const SupervisionController = {
             }
         }
 
-        if (data.tipoVisita === 'Supervisión de Ruta') {
+        if (esSupervisionDomicilio) {
             if (!data.comentario?.trim()) {
                 alert('❌ Los comentarios de lo encontrado en sitio son obligatorios');
                 return false;
             }
 
-            const encuestaCompleta = this.ENCUESTA_RUTA_FIELDS.every(field => data[field]?.trim());
+            const encuestaCompleta = this.ENCUESTA_DOMICILIO_FIELDS.every(field => data[field]?.trim());
             if (!encuestaCompleta) {
                 alert('❌ Completa las 5 preguntas de la encuesta al cliente');
                 return false;
@@ -476,6 +567,19 @@ const SupervisionController = {
                     alert('❌ La dirección o referencias para pedidos son obligatorias');
                     return false;
                 }
+            }
+        }
+
+        if (esSupervisionRuta) {
+            if (!data.comentario?.trim()) {
+                alert('❌ Los comentarios de lo encontrado en sitio son obligatorios');
+                return false;
+            }
+
+            const revisionCompleta = this.REVISION_OPERADOR_FIELDS.every(field => data[field]?.trim());
+            if (!revisionCompleta) {
+                alert('❌ Completa las 5 preguntas de revisión al operador');
+                return false;
             }
         }
         
@@ -499,22 +603,29 @@ const SupervisionController = {
         App.render();
         
         const now = new Date();
-        const tipoVisita = appState.supervisionData.tipoVisita || 'Atención a Queja';
+        const tipoVisita = this.formatTipoVisita(appState.supervisionData.tipoVisita);
         const esAtencionQueja = tipoVisita === 'Atención a Queja';
-        const esSupervisionRuta = tipoVisita === 'Supervisión de Ruta';
-        const registraClientePedidos = esSupervisionRuta && appState.supervisionData.servicioCalleRecibido === 'Sí';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
+        const registraClientePedidos = esSupervisionDomicilio && appState.supervisionData.servicioCalleRecibido === 'Sí';
         const datosSupervision = {
             ...appState.supervisionData,
             tipoVisita,
             motivoQueja: esAtencionQueja ? appState.supervisionData.motivoQueja : '',
             solucion: esAtencionQueja ? appState.supervisionData.solucion : '',
-            comentario: esSupervisionRuta ? appState.supervisionData.comentario : (appState.supervisionData.comentario || ''),
-            servicioCalleRecibido: esSupervisionRuta ? (appState.supervisionData.servicioCalleRecibido || 'No') : '',
-            encuestaTratoVendedor: esSupervisionRuta ? appState.supervisionData.encuestaTratoVendedor : '',
-            encuestaClaridadVendedor: esSupervisionRuta ? appState.supervisionData.encuestaClaridadVendedor : '',
-            encuestaTiempoServicio: esSupervisionRuta ? appState.supervisionData.encuestaTiempoServicio : '',
-            encuestaPresentacionVendedor: esSupervisionRuta ? appState.supervisionData.encuestaPresentacionVendedor : '',
-            encuestaSatisfaccionCliente: esSupervisionRuta ? appState.supervisionData.encuestaSatisfaccionCliente : '',
+            comentario: esSupervisionCampo ? appState.supervisionData.comentario : (appState.supervisionData.comentario || ''),
+            servicioCalleRecibido: esSupervisionDomicilio ? (appState.supervisionData.servicioCalleRecibido || 'No') : '',
+            encuestaTratoVendedor: esSupervisionDomicilio ? appState.supervisionData.encuestaTratoVendedor : '',
+            encuestaClaridadVendedor: esSupervisionDomicilio ? appState.supervisionData.encuestaClaridadVendedor : '',
+            encuestaTiempoServicio: esSupervisionDomicilio ? appState.supervisionData.encuestaTiempoServicio : '',
+            encuestaPresentacionVendedor: esSupervisionDomicilio ? appState.supervisionData.encuestaPresentacionVendedor : '',
+            encuestaSatisfaccionCliente: esSupervisionDomicilio ? appState.supervisionData.encuestaSatisfaccionCliente : '',
+            revisionEquipoSeguridad: esSupervisionRuta ? appState.supervisionData.revisionEquipoSeguridad : '',
+            revisionPresentacionIdentificacion: esSupervisionRuta ? appState.supervisionData.revisionPresentacionIdentificacion : '',
+            revisionUnidadCondiciones: esSupervisionRuta ? appState.supervisionData.revisionUnidadCondiciones : '',
+            revisionDocumentacionServicio: esSupervisionRuta ? appState.supervisionData.revisionDocumentacionServicio : '',
+            revisionManejoSeguro: esSupervisionRuta ? appState.supervisionData.revisionManejoSeguro : '',
             datosPedidosNombre: registraClientePedidos ? appState.supervisionData.datosPedidosNombre : '',
             datosPedidosTelefono: registraClientePedidos ? appState.supervisionData.datosPedidosTelefono : '',
             datosPedidosDireccion: registraClientePedidos ? appState.supervisionData.datosPedidosDireccion : ''
@@ -584,6 +695,11 @@ const SupervisionController = {
                     encuestaTiempoServicio: '',
                     encuestaPresentacionVendedor: '',
                     encuestaSatisfaccionCliente: '',
+                    revisionEquipoSeguridad: '',
+                    revisionPresentacionIdentificacion: '',
+                    revisionUnidadCondiciones: '',
+                    revisionDocumentacionServicio: '',
+                    revisionManejoSeguro: '',
                     evidenciasFotos: [],
                     firmaSupervisor: null
                 };
@@ -646,12 +762,15 @@ const SupervisionController = {
             ubicacionGPS = `⚠️ *ALERTA:* El supervisor bloqueó o apagó el GPS del celular.\n📍 *Dirección escrita a mano (NO VERIFICADA):* ${reporte.ubicacion || 'No ingresada'}`;
         }
 
-        const esAtencionQueja = (reporte.tipoVisita || 'Atención a Queja') === 'Atención a Queja';
-        const esSupervisionRuta = reporte.tipoVisita === 'Supervisión de Ruta';
+        const tipoVisita = this.formatTipoVisita(reporte.tipoVisita);
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const etiquetaPersona = esSupervisionRuta ? 'Operador/Chofer' : 'Cliente';
         const detalleVisita = esAtencionQueja
             ? `🔴 *Queja:* ${reporte.motivoQueja}\n` +
               `✅ *Solución:* ${reporte.solucion}\n`
-            : esSupervisionRuta
+            : esSupervisionDomicilio
                 ? `🔎 *Hallazgos en sitio:* ${reporte.comentario || 'No registrado'}\n` +
                   `⭐ *Encuesta al cliente:*\n` +
                   `- Trato del vendedor: ${reporte.encuestaTratoVendedor || 'N/A'}/10\n` +
@@ -666,14 +785,22 @@ const SupervisionController = {
                       `Teléfono: ${reporte.datosPedidosTelefono || 'No registrado'}\n` +
                       `Dirección/Referencias: ${reporte.datosPedidosDireccion || 'No registrado'}\n`
                     : '')
+            : esSupervisionRuta
+                ? `🔎 *Hallazgos en sitio:* ${reporte.comentario || 'No registrado'}\n` +
+                  `✅ *Revisión del operador:*\n` +
+                  `- Equipo de seguridad completo: ${reporte.revisionEquipoSeguridad || 'N/A'}\n` +
+                  `- Presentación e identificación: ${reporte.revisionPresentacionIdentificacion || 'N/A'}\n` +
+                  `- Unidad limpia/en condiciones: ${reporte.revisionUnidadCondiciones || 'N/A'}\n` +
+                  `- Documentación del servicio en orden: ${reporte.revisionDocumentacionServicio || 'N/A'}\n` +
+                  `- Atención y maniobras seguras: ${reporte.revisionManejoSeguro || 'N/A'}\n`
             : '';
 
         const mensaje = `🚨 *SUPERVISIÓN COMPLETADA* 🚨\n\n` +
                         `👨‍🔧 *Supervisor:* ${reporte.nombreSupervisor}\n` +
-                        `📝 *Tipo de Visita:* ${reporte.tipoVisita || 'Atención a Queja'}\n` +
+                        `📝 *Tipo de Visita:* ${tipoVisita}\n` +
                         `${reporte.ruta ? `🛣️ *Ruta:* ${reporte.ruta}\n` : ''}` +
-                        `👤 *Cliente:* ${reporte.nombreCliente}\n` +
-                        `📦 *Pedido:* ${reporte.numeroPedido}\n` +
+                        `👤 *${etiquetaPersona}:* ${reporte.nombreCliente}\n` +
+                        `${reporte.numeroPedido ? `📦 *Económico de Unidad:* ${reporte.numeroPedido}\n` : ''}` +
                         detalleVisita +
                         `📅 *Fecha/Hora:* ${reporte.fecha} ${reporte.hora}\n\n` +
                         `${ubicacionGPS}`;
