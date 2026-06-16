@@ -14,6 +14,51 @@ const AdminController = {
         return op.includes('prueba') || sup.includes('prueba') || cli.includes('prueba') || uni.includes('prueba');
     },
 
+    getItemDateParts(item) {
+        let itemYear, itemMonth, itemDay;
+
+        if (item?.timestamp) {
+            const fecha = new Date(item.timestamp);
+            itemYear = fecha.getFullYear();
+            itemMonth = fecha.getMonth() + 1;
+            itemDay = fecha.getDate();
+        } else if (typeof item?.fecha === 'string') {
+            if (item.fecha.includes('/')) {
+                const [dia, mes, anio] = item.fecha.split('/').map(Number);
+                itemYear = anio;
+                itemMonth = mes;
+                itemDay = dia;
+            } else if (item.fecha.includes('-')) {
+                const [anio, mes, dia] = item.fecha.split('-').map(Number);
+                itemYear = anio;
+                itemMonth = mes;
+                itemDay = dia;
+            }
+        }
+
+        return { itemYear, itemMonth, itemDay };
+    },
+
+    matchesDateFilters(item, monthFilter, dateFilter) {
+        if (!monthFilter && !dateFilter) return true;
+
+        const { itemYear, itemMonth, itemDay } = this.getItemDateParts(item);
+
+        if (monthFilter) {
+            if (!itemYear || !itemMonth) return false;
+            const [year, month] = monthFilter.split('-').map(Number);
+            if (itemYear !== year || itemMonth !== month) return false;
+        }
+
+        if (dateFilter) {
+            if (!itemYear || !itemMonth || !itemDay) return false;
+            const [year, month, day] = dateFilter.split('-').map(Number);
+            if (itemYear !== year || itemMonth !== month || itemDay !== day) return false;
+        }
+
+        return true;
+    },
+
     formatTipoVisita(tipoVisita = '') {
         return tipoVisita === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
     },
@@ -47,6 +92,7 @@ const AdminController = {
     switchTab(tab) {
         App.appState.activeTab = tab;
         App.appState.filterStatus = 'all'; // Limpiar el filtro de tarjetas al cambiar de pestaña
+        if (tab !== 'supervisiones') App.appState.selectedSupervisionIds = [];
         this.updateTabStyles(tab);
         if (tab === 'mapas') {
             const c = document.getElementById('reportsList');
@@ -57,11 +103,21 @@ const AdminController = {
     // Filtros
     updateFilterDate(date) { 
         App.appState.filterDate = date; 
+        if (date) {
+            App.appState.filterMonth = '';
+            const monthInput = document.getElementById('filterMonth');
+            if (monthInput) monthInput.value = '';
+        }
         if (App.appState.activeTab !== 'mapas') this.loadReportsIntoPanel(); 
     },
     
     updateFilterMonth(m) { 
         App.appState.filterMonth = m; 
+        if (m) {
+            App.appState.filterDate = '';
+            const dateInput = document.getElementById('filterDate');
+            if (dateInput) dateInput.value = '';
+        }
         if (App.appState.activeTab !== 'mapas') this.loadReportsIntoPanel(); 
     },
     
@@ -104,7 +160,72 @@ const AdminController = {
         App.appState.filterSearch = '';
         App.appState.filterStatus = 'all';
         App.appState.filterTipoRuta = 'Todos';
+        App.appState.selectedSupervisionIds = [];
         App.render();
+    },
+
+    getSelectedSupervisionIds() {
+        if (!Array.isArray(App.appState.selectedSupervisionIds)) {
+            App.appState.selectedSupervisionIds = [];
+        }
+        return App.appState.selectedSupervisionIds.map(String);
+    },
+
+    pruneSelectedSupervisions(visibleItems) {
+        const visibleIds = new Set((visibleItems || []).map(item => String(item.id || '')).filter(Boolean));
+        App.appState.selectedSupervisionIds = this.getSelectedSupervisionIds().filter(id => visibleIds.has(id));
+    },
+
+    updateSupervisionSelection(id, checked) {
+        if (!id) return;
+        const selected = new Set(this.getSelectedSupervisionIds());
+        const normalizedId = String(id);
+
+        if (checked) selected.add(normalizedId);
+        else selected.delete(normalizedId);
+
+        App.appState.selectedSupervisionIds = Array.from(selected);
+        this.updateSelectedSupervisionCounter();
+    },
+
+    selectVisibleSupervisions() {
+        const boxes = Array.from(document.querySelectorAll('.supervision-select-checkbox'));
+        App.appState.selectedSupervisionIds = boxes
+            .map(box => String(box.dataset.supervisionId || ''))
+            .filter(Boolean);
+        this.updateSelectedSupervisionCounter();
+    },
+
+    clearSelectedSupervisions() {
+        App.appState.selectedSupervisionIds = [];
+        this.updateSelectedSupervisionCounter();
+    },
+
+    updateSelectedSupervisionCounter() {
+        const selected = new Set(this.getSelectedSupervisionIds());
+        const boxes = Array.from(document.querySelectorAll('.supervision-select-checkbox'));
+        let visibleSelected = 0;
+
+        boxes.forEach(box => {
+            const isSelected = selected.has(String(box.dataset.supervisionId || ''));
+            box.checked = isSelected;
+            if (isSelected) visibleSelected++;
+
+            const card = box.closest('.report-card');
+            if (card) {
+                card.style.boxShadow = isSelected ? '0 0 0 2px rgba(8, 103, 236, 0.28)' : '';
+            }
+        });
+
+        const counter = document.getElementById('supervisionSelectionCounter');
+        if (counter) counter.textContent = `${visibleSelected} de ${boxes.length} seleccionadas`;
+
+        const hint = document.getElementById('supervisionSelectionHint');
+        if (hint) {
+            hint.textContent = visibleSelected > 0
+                ? 'Se exportaran solo las supervisiones seleccionadas.'
+                : 'Sin seleccion: se exportan todas las supervisiones filtradas.';
+        }
     },
 
     applyTallerQuickFilter(period, status) {
@@ -328,8 +449,14 @@ const AdminController = {
             if (t) t.textContent = finalFiltered.length;
             // Excluir los de prueba del conteo total que se muestra arriba de la lista
             if (t) t.textContent = finalFiltered.filter(i => !this.isTestRecord(i)).length;
+            if (App.appState.activeTab === 'supervisiones') {
+                this.pruneSelectedSupervisions(finalFiltered);
+            }
             if (c) {
                 c.innerHTML = AdminView.renderReportsList(finalFiltered, App.appState.activeTab);
+                if (App.appState.activeTab === 'supervisiones') {
+                    setTimeout(() => this.updateSelectedSupervisionCounter(), 0);
+                }
                 
                 // 🎨 Post-procesamiento para pintar de morado las tarjetas de prueba en las listas
                 setTimeout(() => {
@@ -1015,6 +1142,19 @@ const AdminController = {
         
         // Descartar registros de prueba para no exportarlos
         let filtered = data.filter(i => !this.isTestRecord(i));
+
+        filtered = filtered.filter(i => this.matchesDateFilters(
+            i,
+            App.appState.step === 'taller-panel' ? App.appState.filterTallerMonth : App.appState.filterMonth,
+            App.appState.step === 'taller-panel' ? App.appState.filterTallerDate : App.appState.filterDate
+        ));
+
+        if (App.appState.step !== 'taller-panel' && App.appState.activeTab === 'supervisiones') {
+            const selectedIds = new Set(this.getSelectedSupervisionIds());
+            if (selectedIds.size > 0) {
+                filtered = filtered.filter(i => selectedIds.has(String(i.id || '')));
+            }
+        }
         
         if (App.appState.filterSearch) {
             const s = App.appState.filterSearch.toLowerCase();
@@ -1093,11 +1233,13 @@ const AdminController = {
     async exportAllToPDF() {
         const isTaller = App.appState.step === 'taller-panel';
         const activeTab = isTaller ? 'ordenes' : App.appState.activeTab;
+        const usingSelection = activeTab === 'supervisiones' && this.getSelectedSupervisionIds().length > 0;
         if (activeTab === 'mapas') return alert('Esta función no aplica para el mapa.');
 
         const filtered = await this.getFilteredDataForExport();
         if (!filtered.length) return alert('No hay registros para exportar con los filtros actuales.');
-        if (!confirm(`Se van a descargar ${filtered.length} archivos PDF individuales.\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
+        const exportScope = usingSelection ? 'supervisiones seleccionadas' : 'registros filtrados';
+        if (!confirm(`Se van a descargar ${filtered.length} archivos PDF individuales (${exportScope}).\n\nIMPORTANTE: Tu navegador podría pedirte permiso para "Descargar múltiples archivos". Por favor dale en "Permitir".\n\n¿Deseas continuar?`)) return;
 
         const loadingDiv = document.createElement('div');
         loadingDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;font-family:sans-serif;';

@@ -11,6 +11,7 @@ const App = {
         reports: [],
         ordenes: [],
         supervisiones: [],
+        selectedSupervisionIds: [],
         filterDate: '',
         filterSearch: '',
         filterTipoRuta: 'Todos',

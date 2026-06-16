@@ -784,10 +784,15 @@ const AdminView = {
             
         } else {
             // SUPERVISIONES
-            return items.map(supervision => {
+            const selectedIds = new Set((App.appState.selectedSupervisionIds || []).map(String));
+            const selectionToolbar = '';
+
+            return selectionToolbar + items.map(supervision => {
                 const tipoVisita = AdminController.formatTipoVisita(supervision.tipoVisita);
                 const esAtencionQueja = tipoVisita === 'Atención a Queja';
                 const esSupervisionRuta = AdminController.isSupervisionRuta(tipoVisita);
+                const supervisionId = String(supervision.id || '');
+                const isSelected = selectedIds.has(supervisionId);
                 const encuestaScores = [
                     supervision.encuestaTratoVendedor,
                     supervision.encuestaClaridadVendedor,
@@ -801,6 +806,17 @@ const AdminView = {
                 const revisionOperador = AdminController.getRevisionOperadorSummary(supervision);
                 return `
                 <div class="report-card" style="border-left: 4px solid #0867ec;">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #1d4ed8; cursor: pointer; user-select: none;">
+                            <input type="checkbox"
+                                   class="supervision-select-checkbox"
+                                   data-supervision-id="${supervisionId}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="AdminController.updateSupervisionSelection('${supervisionId}', this.checked)"
+                                   style="width: 18px; height: 18px; accent-color: #0867ec; cursor: pointer;">
+                            Seleccionar
+                        </label>
+                    </div>
                     <div class="report-header">
                         <div>
                             <div class="report-date">${supervision.fecha || ''} ${supervision.hora || ''}</div>
