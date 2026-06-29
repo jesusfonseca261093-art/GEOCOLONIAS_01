@@ -173,7 +173,7 @@ const ActaHechosView = {
 
                         <div class="director-signature">
                             <div class="director-signature-line"></div>
-                            <p><strong>Ing. EDUARDO MARTIN PRIETO MICHEL</strong></p>
+                            <p><strong>Lic. Jose Manuel Oropeza Hernandez</strong></p>
                             <p>GERENTE GENERAL</p>
                         </div>
                     </div>
