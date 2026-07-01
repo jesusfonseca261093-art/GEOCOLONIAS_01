@@ -665,9 +665,6 @@ const SupervisionController = {
                 }
                 appState.supervisiones.push(reporte);
                 appState.ultimaSupervision = reporte;
-
-                // ⏳ Obligar a la app a esperar a que salgan TODOS los WhatsApps antes de avanzar
-                await this.notificarPorWhatsapp(reporte);
                 
                 // Resetear formulario
                 appState.supervisionData = {
@@ -714,6 +711,9 @@ const SupervisionController = {
                 };
                 
                 appState.isSubmitting = false;
+                
+                // ⏳ Obligar a la app a esperar a que salgan TODOS los WhatsApps antes de avanzar
+                await this.notificarPorWhatsapp(reporte);
                 
                 App.goToStep('supervision-success');
                 
@@ -816,9 +816,9 @@ const SupervisionController = {
                     await fetch(url, { mode: 'no-cors', method: 'GET' });
                     console.log("WhatsApp procesado para: " + contacto.phone);
                 } catch (e) {}
-                
-                // ⏱️ Esperar 4 segundos (CallMeBot es estricto con el spam)
-                await new Promise(resolve => setTimeout(resolve, 4000));
+
+                // ⏱️ Esperar 8 segundos (CallMeBot es estricto con el spam y necesita más tiempo)
+                await new Promise(resolve => setTimeout(resolve, 8000));
             }
         }
     }
