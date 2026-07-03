@@ -74,7 +74,7 @@ const SupervisionView = {
     formatTipoVisita(tipoVisita = '') {
         const value = (tipoVisita || '').trim();
         if (!value) return 'Atención a Queja';
-        return value === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : value;
+        return value === 'Supervisión de Ruta' ? 'Supervisión en Ruta' : value;
     },
 
     // Vista del formulario de supervisión

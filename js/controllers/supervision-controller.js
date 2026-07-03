@@ -40,7 +40,7 @@ const SupervisionController = {
     formatTipoVisita(tipoVisita = '') {
         const value = (tipoVisita || '').trim();
         if (!value) return 'Atención a Queja';
-        return value === this.TIPO_SUPERVISION_RUTA_ANTERIOR ? this.TIPO_SUPERVISION_DOMICILIO : value;
+        return value === this.TIPO_SUPERVISION_RUTA_ANTERIOR ? this.TIPO_SUPERVISION_RUTA : value;
     },
     
     // Variable para almacenar las coordenadas actuales
@@ -223,12 +223,12 @@ const SupervisionController = {
         this.updateFormData('tipoVisita', value, appState);
 
         const esAtencionQueja = value === 'Atención a Queja';
-        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
-        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(value);
+        const esSupervisionRuta = this.isSupervisionRuta(value);
         const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
         const tipoVisitaField = document.getElementById('tipoVisita');
-        if (tipoVisitaField && tipoVisitaField.value !== tipoVisita) {
-            tipoVisitaField.value = tipoVisita;
+        if (tipoVisitaField && tipoVisitaField.value !== value) {
+            tipoVisitaField.value = value;
         }
 
         const detallesQuejaCard = document.getElementById('detallesQuejaCard');
