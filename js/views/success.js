@@ -2,7 +2,9 @@
 
 const SuccessView = {
     formatTipoVisita(tipoVisita = '') {
-        return tipoVisita === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+        const value = (tipoVisita || '').trim();
+        if (!value) return 'Atención a Queja';
+        return value === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : value;
     },
 
     isSupervisionRuta(tipoVisita = '') {
@@ -137,6 +139,7 @@ const SuccessView = {
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Unidad limpia/en condiciones:</strong> ${ultimo.revisionUnidadCondiciones || 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Documentación del servicio:</strong> ${ultimo.revisionDocumentacionServicio || 'No especificado'}</p>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Atención y maniobras seguras:</strong> ${ultimo.revisionManejoSeguro || 'No especificado'}</p>
+                                <p style="font-size: 12px; margin: 5px 0;"><strong>Caja de seguridad:</strong> ${ultimo.revisionCajaSeguridad || 'No especificado'}</p>
                             ` : `
                                 <h5 style="color: #1e293b; margin: 8px 0 4px;">📝 Detalles de la Visita:</h5>
                                 <p style="font-size: 12px; margin: 5px 0;"><strong>Tipo:</strong> Supervisión en Domicilio</p>

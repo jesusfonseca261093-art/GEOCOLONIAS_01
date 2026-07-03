@@ -17,7 +17,8 @@ const SupervisionController = {
         'revisionPresentacionIdentificacion',
         'revisionUnidadCondiciones',
         'revisionDocumentacionServicio',
-        'revisionManejoSeguro'
+        'revisionManejoSeguro',
+        'revisionCajaSeguridad'
     ],
 
     TIPO_SUPERVISION_DOMICILIO: 'Supervisión en Domicilio',
@@ -25,11 +26,11 @@ const SupervisionController = {
     TIPO_SUPERVISION_RUTA_ANTERIOR: 'Supervisión de Ruta',
 
     isSupervisionDomicilio(tipoVisita = '') {
-        return tipoVisita === this.TIPO_SUPERVISION_DOMICILIO || tipoVisita === this.TIPO_SUPERVISION_RUTA_ANTERIOR;
+        return this.formatTipoVisita(tipoVisita) === this.TIPO_SUPERVISION_DOMICILIO;
     },
 
     isSupervisionRuta(tipoVisita = '') {
-        return tipoVisita === this.TIPO_SUPERVISION_RUTA;
+        return this.formatTipoVisita(tipoVisita) === this.TIPO_SUPERVISION_RUTA;
     },
 
     isSupervisionCampo(tipoVisita = '') {
@@ -37,7 +38,9 @@ const SupervisionController = {
     },
 
     formatTipoVisita(tipoVisita = '') {
-        return this.isSupervisionDomicilio(tipoVisita) ? this.TIPO_SUPERVISION_DOMICILIO : (tipoVisita || 'Atención a Queja');
+        const value = (tipoVisita || '').trim();
+        if (!value) return 'Atención a Queja';
+        return value === this.TIPO_SUPERVISION_RUTA_ANTERIOR ? this.TIPO_SUPERVISION_DOMICILIO : value;
     },
     
     // Variable para almacenar las coordenadas actuales
@@ -223,6 +226,11 @@ const SupervisionController = {
         const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
         const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
         const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
+        const tipoVisitaField = document.getElementById('tipoVisita');
+        if (tipoVisitaField && tipoVisitaField.value !== tipoVisita) {
+            tipoVisitaField.value = tipoVisita;
+        }
+
         const detallesQuejaCard = document.getElementById('detallesQuejaCard');
         if (detallesQuejaCard) {
             detallesQuejaCard.style.display = esAtencionQueja ? '' : 'none';
@@ -578,7 +586,7 @@ const SupervisionController = {
 
             const revisionCompleta = this.REVISION_OPERADOR_FIELDS.every(field => data[field]?.trim());
             if (!revisionCompleta) {
-                alert('❌ Completa las 5 preguntas de revisión al operador');
+                alert('❌ Completa todas las preguntas de revisión al operador');
                 return false;
             }
         }
@@ -626,6 +634,7 @@ const SupervisionController = {
             revisionUnidadCondiciones: esSupervisionRuta ? appState.supervisionData.revisionUnidadCondiciones : '',
             revisionDocumentacionServicio: esSupervisionRuta ? appState.supervisionData.revisionDocumentacionServicio : '',
             revisionManejoSeguro: esSupervisionRuta ? appState.supervisionData.revisionManejoSeguro : '',
+            revisionCajaSeguridad: esSupervisionRuta ? appState.supervisionData.revisionCajaSeguridad : '',
             datosPedidosNombre: registraClientePedidos ? appState.supervisionData.datosPedidosNombre : '',
             datosPedidosTelefono: registraClientePedidos ? appState.supervisionData.datosPedidosTelefono : '',
             datosPedidosDireccion: registraClientePedidos ? appState.supervisionData.datosPedidosDireccion : ''
@@ -700,6 +709,7 @@ const SupervisionController = {
                     revisionUnidadCondiciones: '',
                     revisionDocumentacionServicio: '',
                     revisionManejoSeguro: '',
+                    revisionCajaSeguridad: '',
                     evidenciasFotos: [],
                     firmaSupervisor: null
                 };
@@ -792,7 +802,8 @@ const SupervisionController = {
                   `- Presentación e identificación: ${reporte.revisionPresentacionIdentificacion || 'N/A'}\n` +
                   `- Unidad limpia/en condiciones: ${reporte.revisionUnidadCondiciones || 'N/A'}\n` +
                   `- Documentación del servicio en orden: ${reporte.revisionDocumentacionServicio || 'N/A'}\n` +
-                  `- Atención y maniobras seguras: ${reporte.revisionManejoSeguro || 'N/A'}\n`
+                  `- Atención y maniobras seguras: ${reporte.revisionManejoSeguro || 'N/A'}\n` +
+                  `- Caja de seguridad: ${reporte.revisionCajaSeguridad || 'N/A'}\n`
             : '';
 
         const mensaje = `🚨 *SUPERVISIÓN COMPLETADA* 🚨\n\n` +

@@ -64,6 +64,12 @@ const App = {
             encuestaTiempoServicio: '',
             encuestaPresentacionVendedor: '',
             encuestaSatisfaccionCliente: '',
+            revisionEquipoSeguridad: '',
+            revisionPresentacionIdentificacion: '',
+            revisionUnidadCondiciones: '',
+            revisionDocumentacionServicio: '',
+            revisionManejoSeguro: '',
+            revisionCajaSeguridad: '',
             evidenciaFoto: null,
             evidenciasFotos: [],
             firmaSupervisor: null

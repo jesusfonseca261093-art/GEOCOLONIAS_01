@@ -60,7 +60,9 @@ const AdminController = {
     },
 
     formatTipoVisita(tipoVisita = '') {
-        return tipoVisita === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+        const value = (tipoVisita || '').trim();
+        if (!value) return 'Atención a Queja';
+        return value === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : value;
     },
 
     isSupervisionRuta(tipoVisita = '') {
@@ -77,7 +79,8 @@ const AdminController = {
             'revisionPresentacionIdentificacion',
             'revisionUnidadCondiciones',
             'revisionDocumentacionServicio',
-            'revisionManejoSeguro'
+            'revisionManejoSeguro',
+            'revisionCajaSeguridad'
         ];
     },
 
@@ -1008,6 +1011,7 @@ const AdminController = {
                             <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Unidad limpia/en condiciones:</strong> ${s.revisionUnidadCondiciones || 'No especificado'}</p>
                             <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Documentación del servicio:</strong> ${s.revisionDocumentacionServicio || 'No especificado'}</p>
                             <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Atención y maniobras seguras:</strong> ${s.revisionManejoSeguro || 'No especificado'}</p>
+                            <p style="margin: 5px 0; color: #334155; font-size: 14px;"><strong>Caja de seguridad:</strong> ${s.revisionCajaSeguridad || 'No especificado'}</p>
                         </div>
                     ` : `
                         <div style="background: #eef2ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4f46e5;">
@@ -1224,8 +1228,8 @@ const AdminController = {
     
     exportToCSVFormat(d,t) { 
         if (t === 'supervisiones') {
-            return 'Fecha,Hora,Supervisor,Tipo de Visita,Ruta,Pedido/Económico,Cliente/Operador,Teléfono,Motivo,Solución,Hallazgos,Trato Vendedor,Claridad Información,Tiempo Atención,Presentación Vendedor,Satisfacción General,Servicio Calle Recibido,Nombre Pedidos,Teléfono Pedidos,Dirección Pedidos,Equipo Seguridad,Identificación Operador,Unidad Condiciones,Documentación Servicio,Manejo Seguro,Ubicación\n' +
-                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${this.formatTipoVisita(i.tipoVisita)}","${i.ruta || ''}","${i.numeroPedido || ''}","${i.nombreCliente || ''}","${i.telefonoCliente || ''}","${i.motivoQueja || ''}","${i.solucion || ''}","${i.comentario || ''}","${i.encuestaTratoVendedor || ''}","${i.encuestaClaridadVendedor || ''}","${i.encuestaTiempoServicio || ''}","${i.encuestaPresentacionVendedor || ''}","${i.encuestaSatisfaccionCliente || ''}","${i.servicioCalleRecibido || ''}","${i.datosPedidosNombre || ''}","${i.datosPedidosTelefono || ''}","${i.datosPedidosDireccion || ''}","${i.revisionEquipoSeguridad || ''}","${i.revisionPresentacionIdentificacion || ''}","${i.revisionUnidadCondiciones || ''}","${i.revisionDocumentacionServicio || ''}","${i.revisionManejoSeguro || ''}","${i.ubicacion || ''}"`).join('\n');
+            return 'Fecha,Hora,Supervisor,Tipo de Visita,Ruta,Pedido/Económico,Cliente/Operador,Teléfono,Motivo,Solución,Hallazgos,Trato Vendedor,Claridad Información,Tiempo Atención,Presentación Vendedor,Satisfacción General,Servicio Calle Recibido,Nombre Pedidos,Teléfono Pedidos,Dirección Pedidos,Equipo Seguridad,Identificación Operador,Unidad Condiciones,Documentación Servicio,Manejo Seguro,Caja Seguridad,Ubicación\n' +
+                   d.map(i => `"${i.fecha}","${i.hora}","${i.nombreSupervisor}","${this.formatTipoVisita(i.tipoVisita)}","${i.ruta || ''}","${i.numeroPedido || ''}","${i.nombreCliente || ''}","${i.telefonoCliente || ''}","${i.motivoQueja || ''}","${i.solucion || ''}","${i.comentario || ''}","${i.encuestaTratoVendedor || ''}","${i.encuestaClaridadVendedor || ''}","${i.encuestaTiempoServicio || ''}","${i.encuestaPresentacionVendedor || ''}","${i.encuestaSatisfaccionCliente || ''}","${i.servicioCalleRecibido || ''}","${i.datosPedidosNombre || ''}","${i.datosPedidosTelefono || ''}","${i.datosPedidosDireccion || ''}","${i.revisionEquipoSeguridad || ''}","${i.revisionPresentacionIdentificacion || ''}","${i.revisionUnidadCondiciones || ''}","${i.revisionDocumentacionServicio || ''}","${i.revisionManejoSeguro || ''}","${i.revisionCajaSeguridad || ''}","${i.ubicacion || ''}"`).join('\n');
         }
         return '';
     },

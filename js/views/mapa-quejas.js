@@ -257,7 +257,8 @@ const MapaQuejasView = {
                             <strong>✅ Presentación/ID:</strong> ${sup.revisionPresentacionIdentificacion || 'No especificado'}<br>
                             <strong>✅ Unidad:</strong> ${sup.revisionUnidadCondiciones || 'No especificado'}<br>
                             <strong>✅ Documentación:</strong> ${sup.revisionDocumentacionServicio || 'No especificado'}<br>
-                            <strong>✅ Manejo seguro:</strong> ${sup.revisionManejoSeguro || 'No especificado'}
+                            <strong>✅ Manejo seguro:</strong> ${sup.revisionManejoSeguro || 'No especificado'}<br>
+                            <strong>✅ Caja de seguridad:</strong> ${sup.revisionCajaSeguridad || 'No especificado'}
                         </div>
                     ` : `
                         <div style="margin: 8px 0; padding: 5px; background: #eef2ff; border-radius: 4px;">

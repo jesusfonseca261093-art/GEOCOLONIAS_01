@@ -64,15 +64,17 @@ const SupervisionView = {
     },
 
     isSupervisionDomicilio(tipoVisita = '') {
-        return tipoVisita === 'Supervisión en Domicilio' || tipoVisita === 'Supervisión de Ruta';
+        return this.formatTipoVisita(tipoVisita) === 'Supervisión en Domicilio';
     },
 
     isSupervisionRuta(tipoVisita = '') {
-        return tipoVisita === 'Supervisión en Ruta';
+        return this.formatTipoVisita(tipoVisita) === 'Supervisión en Ruta';
     },
 
     formatTipoVisita(tipoVisita = '') {
-        return this.isSupervisionDomicilio(tipoVisita) ? 'Supervisión en Domicilio' : (tipoVisita || 'Atención a Queja');
+        const value = (tipoVisita || '').trim();
+        if (!value) return 'Atención a Queja';
+        return value === 'Supervisión de Ruta' ? 'Supervisión en Domicilio' : value;
     },
 
     // Vista del formulario de supervisión
@@ -368,7 +370,7 @@ const SupervisionView = {
                                 ${this.renderRevisionOperadorPregunta('revisionUnidadCondiciones', '¿La unidad está limpia y en condiciones adecuadas?', data, esSupervisionRuta)}
                                 ${this.renderRevisionOperadorPregunta('revisionDocumentacionServicio', '¿Trae documentación, notas o datos del servicio en orden?', data, esSupervisionRuta)}
                                 ${this.renderRevisionOperadorPregunta('revisionManejoSeguro', '¿Realiza la atención y maniobras de forma segura?', data, esSupervisionRuta)}
-                                ${this.renderRevisionOperadorPregunta('revisionManejoSeguro', '¿Tiene caja de seguridad?', data, esSupervisionRuta)}
+                                ${this.renderRevisionOperadorPregunta('revisionCajaSeguridad', '¿Tiene caja de seguridad?', data, esSupervisionRuta)}
                             </div>
                         </div>
                         
