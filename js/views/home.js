@@ -1,4 +1,4 @@
-﻿// Desarrollador :Ing Jose de Jesus Fonseca Chavez
+﻿﻿// Desarrollador :Ing Jose de Jesus Fonseca Chavez
 
 const HomeView = {
     render() {
@@ -53,6 +53,14 @@ const HomeView = {
 
                             <button onclick="App.goToStep('acta-hechos')" class="btn" style="background: linear-gradient(135deg, #f70d0d 0%, #ff0505 100%); color: white;">
                                 <i class='bx bx-file' style="font-size: 22px;"></i> Acta de hechos
+                            </button>
+
+                            <button onclick="App.goToStep('danos-terceros')" class="btn" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+                                <i class='bx bxs-car-crash' style="font-size: 22px;"></i> Daños a Terceros
+                            </button>
+
+                            <button onclick="App.goToStep('golpe-unidades')" class="btn" style="background: linear-gradient(135deg, #be123c 0%, #9f1239 100%); color: white;">
+                                <i class='bx bxs-car-mechanic' style="font-size: 22px;"></i> Golpe a Unidades
                             </button>
 
                             <button onclick="AuthController.logout()" class="btn btn-secondary">
@@ -188,7 +196,3 @@ const HomeView = {
 if (typeof window !== 'undefined') {
     window.HomeView = HomeView;
 }
-
-
-
-

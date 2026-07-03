@@ -140,6 +140,12 @@ const AdminView = {
                                 style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'supervisiones' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'supervisiones' ? '#0867ec' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'supervisiones' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             👨‍🔧 Supervisiones
                         </button>
+                        <button id="tabDanosTercerosBtn" onclick="AdminController.switchTab('danos-terceros')" style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'danos-terceros' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'danos-terceros' ? '#d97706' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'danos-terceros' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
+                            💥 Daños a Terceros
+                        </button>
+                        <button id="tabGolpeUnidadesBtn" onclick="AdminController.switchTab('golpe-unidades')" style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'golpe-unidades' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'golpe-unidades' ? '#be123c' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'golpe-unidades' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
+                            🚗 Golpes a Unidades
+                        </button>
                         <button id="tabMapasBtn" onclick="AdminController.switchTab('mapas')" 
                                 style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'mapas' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'mapas' ? '#10b981' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'mapas' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             🗺️ Mapas de Quejas
@@ -170,11 +176,7 @@ const AdminView = {
                     <!-- Gráfica de Resumen (solo para no mapas) -->
                     ${appState.activeTab !== 'mapas' ? `
                         <div class="card" style="margin-bottom: 16px;">
-                            <h4 id="chartTitle" style="margin-bottom: 10px; color: #1e293b; font-size: 14px;">
-                                ${appState.activeTab === 'checklists' ? '📊 Estado de Inspecciones' : 
-                                    appState.activeTab === 'ordenes' ? '📊 Estado de Órdenes' : 
-                                    '📊 Supervisiones en Campo'}
-                            </h4>
+                            <h4 id="chartTitle" style="margin-bottom: 10px; color: #1e293b; font-size: 14px;">📊 Resumen</h4>
                             <div style="height: 200px; position: relative;"><canvas id="statsChart"></canvas></div>
                         </div>
                     ` : ''}
@@ -779,6 +781,47 @@ const AdminView = {
                             </button>
                         </div>
                     </div>
+                </div>
+            `).join('');
+        
+        } else if (activeTab === 'danos-terceros') {
+            return items.map(r => `
+                <div class="report-card" style="border-left: 4px solid #d97706;">
+                    <div class="report-header">
+                        <div>
+                            <div class="report-date">${r.fecha}</div>
+                            <div style="font-weight: bold; margin-top: 4px;">Supervisor: ${r.supervisor}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="report-unit">Eco: ${r.economico}</div>
+                            <div style="font-size: 12px; color: #64748b;">Chofer: ${r.chofer}</div>
+                        </div>
+                    </div>
+                    <div style="margin: 8px 0; padding: 8px; background: #fffbeb; border-radius: 6px; font-size: 12px;">
+                        <strong>Tercero:</strong> ${r.nombreTercero || 'N/A'}<br>
+                        <strong>Daño:</strong> ${(r.danoCausado || '').substring(0, 80)}...
+                    </div>
+                    <button onclick="AdminController.viewDanosTerceros('${r.id}')" class="btn btn-warning" style="width:100%; margin-top:10px; padding: 8px; font-size: 12px;">Ver Detalles</button>
+                </div>
+            `).join('');
+
+        } else if (activeTab === 'golpe-unidades') {
+            return items.map(r => `
+                <div class="report-card" style="border-left: 4px solid #be123c;">
+                    <div class="report-header">
+                        <div>
+                            <div class="report-date">${r.fecha}</div>
+                            <div style="font-weight: bold; margin-top: 4px;">Supervisor: ${r.supervisor}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="report-unit">Eco: ${r.economico}</div>
+                            <div style="font-size: 12px; color: #64748b;">Chofer: ${r.chofer}</div>
+                        </div>
+                    </div>
+                    <div style="margin: 8px 0; padding: 8px; background: #fff1f2; border-radius: 6px; font-size: 12px;">
+                        <strong>Daños a GEN:</strong> ${(r.danos_gen || '').substring(0, 100)}...
+                    </div>
+                    <button onclick="AdminController.viewGolpeUnidades('${r.id}')" class="btn btn-danger" style="width:100%; margin-top:10px; padding: 8px; font-size: 12px;">Ver Detalles</button>
                 </div>
             `).join('');
             

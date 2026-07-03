@@ -216,10 +216,10 @@ const SupervisionController = {
     },
 
     handleTipoVisitaChange(value, appState) {
-        const tipoVisita = this.formatTipoVisita(value);
-        this.updateFormData('tipoVisita', tipoVisita, appState);
+        // No es necesario formatear aquí, se formatea al validar/guardar.
+        this.updateFormData('tipoVisita', value, appState);
 
-        const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esAtencionQueja = value === 'Atención a Queja';
         const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
         const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
         const esSupervisionCampo = esSupervisionDomicilio || esSupervisionRuta;
@@ -317,7 +317,7 @@ const SupervisionController = {
     handleServicioCalleChange(value, appState) {
         this.updateFormData('servicioCalleRecibido', value, appState);
 
-        const esSupervisionDomicilio = this.isSupervisionDomicilio(appState.supervisionData.tipoVisita);
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(appState.supervisionData.tipoVisita || 'Atención a Queja');
         const mostrarDatosPedidos = esSupervisionDomicilio && value === 'Sí';
         const servicioCalleField = document.getElementById('servicioCalleRecibido');
         if (servicioCalleField && !esSupervisionDomicilio) {
@@ -665,6 +665,10 @@ const SupervisionController = {
                 }
                 appState.supervisiones.push(reporte);
                 appState.ultimaSupervision = reporte;
+
+                // ⏳ Obligar a la app a esperar a que salgan TODOS los WhatsApps antes de avanzar
+                await this.notificarPorWhatsapp(reporte);
+                await this.notificarPorTelegram(reporte);
                 
                 // Resetear formulario
                 appState.supervisionData = {
@@ -712,9 +716,6 @@ const SupervisionController = {
                 
                 appState.isSubmitting = false;
                 
-                // ⏳ Obligar a la app a esperar a que salgan TODOS los WhatsApps antes de avanzar
-                await this.notificarPorWhatsapp(reporte);
-                
                 App.goToStep('supervision-success');
                 
             } catch (error) {
@@ -729,18 +730,18 @@ const SupervisionController = {
     async notificarPorWhatsapp(reporte) {
 
         const directorioSupervisores = {
-            "ROBERTO": { phone: "521"},
-            "OSWALDO": { phone: "5214426162604", apikey: "7228729"},
-            "PRUEBA": { phone: "5214426162604", apikey: "7228729"} // Para que las pruebas te lleguen a ti
+            "OSWALDO": { phone: "5214426162604" },
+            "PRUEBA": { phone: "5214426162604" } // Para que las pruebas te lleguen a ti
         };
 
+        // Destinatarios fijos que reciben copia de TODOS los reportes.
         const destinatarios = [ 
-            { nombre: "Administrador", phone: "5214426162604", apikey: "7228729" },
-            { nombre: "Supervisor de supervisores", phone: "5214423957846", apikey: "3148786"}
+            { nombre: "Administrador", phone: "5214426162604" },
+            { nombre: "Supervisor de supervisores", phone: "5214423957846" }
         ];
 
         const supActual = Object.keys(directorioSupervisores).find(k =>
-        (reporte.nombreSupervisor || '').toUpperCase().includes(k)
+            (reporte.nombreSupervisor || '').toUpperCase().includes(k)
         );
         if (supActual) destinatarios.push(directorioSupervisores[supActual]);
 
@@ -748,7 +749,7 @@ const SupervisionController = {
         const destinatariosUnicos = [];
         const telefonosVistos = new Set();
         destinatarios.forEach(contacto => {
-            if (contacto.phone && contacto.apikey && !telefonosVistos.has(contacto.phone)) {
+            if (contacto.phone && !telefonosVistos.has(contacto.phone)) {
                 telefonosVistos.add(contacto.phone);
                 destinatariosUnicos.push(contacto);
             }
@@ -808,8 +809,8 @@ const SupervisionController = {
 
         // ⏱️ Enviar mensajes uno por uno con pausa para evitar filtro Anti-Spam
         for (const contacto of destinatariosUnicos) {
-            if (contacto.phone && contacto.apikey) {
-                const url = `https://api.callmebot.com/whatsapp.php?phone=${contacto.phone}&text=${encodedMessage}&apikey=${contacto.apikey}`;
+            if (contacto.phone) {
+                const url = `https://whatabot.net/api/send?phone=${contacto.phone}&text=${encodedMessage}`;
                 
                 try {
                     // Await explícito para asegurar que la petición salga completamente del teléfono
@@ -817,9 +818,84 @@ const SupervisionController = {
                     console.log("WhatsApp procesado para: " + contacto.phone);
                 } catch (e) {}
 
-                // ⏱️ Esperar 8 segundos (CallMeBot es estricto con el spam y necesita más tiempo)
-                await new Promise(resolve => setTimeout(resolve, 8000));
+                // ⏱️ Esperar 4 segundos (CallMeBot es estricto con el spam)
+                await new Promise(resolve => setTimeout(resolve, 4000));
             }
+        }
+    },
+
+    async notificarPorTelegram(reporte) {
+        // Verificar que la configuración de Telegram exista y no esté vacía
+        if (!window.CONFIG?.TELEGRAM?.BOT_TOKEN || !window.CONFIG?.TELEGRAM?.CHAT_ID || window.CONFIG.TELEGRAM.CHAT_ID.includes('TU_CHAT_ID')) {
+            console.warn("Configuración de Telegram incompleta en data.js. No se enviará la notificación.");
+            return;
+        }
+
+        // Reutilizamos la misma lógica de construcción de mensaje que la de WhatsApp
+        let ubicacionGPS = "";
+        if (reporte.coordenadas && reporte.coordenadas.lat && reporte.coordenadas.lng) {
+            ubicacionGPS = `📍 *Ubicación Exacta (GPS):*\nhttps://www.google.com/maps?q=${reporte.coordenadas.lat},${reporte.coordenadas.lng}`;
+        } else {
+            ubicacionGPS = `⚠️ *ALERTA:* El supervisor bloqueó o apagó el GPS del celular.\n📍 *Dirección escrita a mano (NO VERIFICADA):* ${reporte.ubicacion || 'No ingresada'}`;
+        }
+
+        const tipoVisita = this.formatTipoVisita(reporte.tipoVisita);
+        const esAtencionQueja = tipoVisita === 'Atención a Queja';
+        const esSupervisionDomicilio = this.isSupervisionDomicilio(tipoVisita);
+        const esSupervisionRuta = this.isSupervisionRuta(tipoVisita);
+        const etiquetaPersona = esSupervisionRuta ? 'Operador/Chofer' : 'Cliente';
+        const detalleVisita = esAtencionQueja
+            ? `🔴 *Queja:* ${reporte.motivoQueja}\n` +
+              `✅ *Solución:* ${reporte.solucion}\n`
+            : esSupervisionDomicilio
+                ? `🔎 *Hallazgos en sitio:* ${reporte.comentario || 'No registrado'}\n` +
+                  `⭐ *Encuesta al cliente:*\n` +
+                  `- Trato del vendedor: ${reporte.encuestaTratoVendedor || 'N/A'}/10\n` +
+                  `- Claridad de información: ${reporte.encuestaClaridadVendedor || 'N/A'}/10\n` +
+                  `- Tiempo de atención: ${reporte.encuestaTiempoServicio || 'N/A'}/10\n` +
+                  `- Presentación del vendedor: ${reporte.encuestaPresentacionVendedor || 'N/A'}/10\n` +
+                  `- Satisfacción general: ${reporte.encuestaSatisfaccionCliente || 'N/A'}/10\n` +
+                  `🧾 *Servicio de calle recibido:* ${reporte.servicioCalleRecibido || 'No'}\n` +
+                  (reporte.servicioCalleRecibido === 'Sí'
+                    ? `📋 *Datos para pedidos:*\n` +
+                      `Nombre: ${reporte.datosPedidosNombre || 'No registrado'}\n` +
+                      `Teléfono: ${reporte.datosPedidosTelefono || 'No registrado'}\n` +
+                      `Dirección/Referencias: ${reporte.datosPedidosDireccion || 'No registrado'}\n`
+                    : '')
+            : esSupervisionRuta
+                ? `🔎 *Hallazgos en sitio:* ${reporte.comentario || 'No registrado'}\n` +
+                  `✅ *Revisión del operador:*\n` +
+                  `- Equipo de seguridad completo: ${reporte.revisionEquipoSeguridad || 'N/A'}\n` +
+                  `- Presentación e identificación: ${reporte.revisionPresentacionIdentificacion || 'N/A'}\n` +
+                  `- Unidad limpia/en condiciones: ${reporte.revisionUnidadCondiciones || 'N/A'}\n` +
+                  `- Documentación del servicio en orden: ${reporte.revisionDocumentacionServicio || 'N/A'}\n` +
+                  `- Atención y maniobras seguras: ${reporte.revisionManejoSeguro || 'N/A'}\n`
+            : '';
+
+        const mensaje = `🚨 *SUPERVISIÓN COMPLETADA* 🚨\n\n` +
+                        `👨‍🔧 *Supervisor:* ${reporte.nombreSupervisor}\n` +
+                        `📝 *Tipo de Visita:* ${tipoVisita}\n` +
+                        `${reporte.ruta ? `🛣️ *Ruta:* ${reporte.ruta}\n` : ''}` +
+                        `👤 *${etiquetaPersona}:* ${reporte.nombreCliente}\n` +
+                        `${reporte.numeroPedido ? `📦 *Económico de Unidad:* ${reporte.numeroPedido}\n` : ''}` +
+                        detalleVisita +
+                        `📅 *Fecha/Hora:* ${reporte.fecha} ${reporte.hora}\n\n` +
+                        `${ubicacionGPS}`;
+        const url = `https://api.telegram.org/bot${window.CONFIG.TELEGRAM.BOT_TOKEN}/sendMessage`;
+
+        try {
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: window.CONFIG.TELEGRAM.CHAT_ID,
+                    text: mensaje,
+                    parse_mode: 'Markdown'
+                })
+            });
+            console.log("Notificación de Telegram enviada exitosamente.");
+        } catch (error) {
+            console.error("Error enviando notificación de Telegram:", error);
         }
     }
 };

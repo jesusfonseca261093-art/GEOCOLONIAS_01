@@ -68,6 +68,12 @@ const App = {
             evidenciasFotos: [],
             firmaSupervisor: null
         },
+        danosTercerosData: {
+            firmaSupervisor: null
+        },
+        golpeUnidadesData: {
+            firmaChofer: null
+        },
         firmaChofer: null,
         firmaTaller: null,
         userRole: null,
@@ -181,6 +187,18 @@ const App = {
                     if (GeocercasView.initMap) GeocercasView.initMap();
                 }, 100);
                 break;
+            case 'danos-terceros':
+                if (typeof DanosTercerosView !== 'undefined' && DanosTercerosView.init) {
+                    if (!this.appState.danosTercerosData) this.appState.danosTercerosData = { firmaSupervisor: null };
+                    DanosTercerosView.init();
+                }
+                break;
+            case 'golpe-unidades':
+                if (typeof GolpeUnidadesView !== 'undefined' && GolpeUnidadesView.init) {
+                    if (!this.appState.golpeUnidadesData) this.appState.golpeUnidadesData = { firmaChofer: null };
+                    GolpeUnidadesView.init();
+                }
+                break;
         }
     },
     
@@ -238,6 +256,18 @@ const App = {
                 break;
             case 'acta-hechos':
                 app.innerHTML = ActaHechosView.render();
+                break;
+            case 'danos-terceros':
+                app.innerHTML = DanosTercerosView.render();
+                break;
+            case 'danos-terceros-success':
+                app.innerHTML = SuccessView.renderDanosTercerosSuccess(this.appState.ultimoReporte);
+                break;
+            case 'golpe-unidades':
+                app.innerHTML = GolpeUnidadesView.render();
+                break;
+            case 'golpe-unidades-success':
+                app.innerHTML = SuccessView.renderGolpeUnidadesSuccess(this.appState.ultimoReporte);
                 break;
             default:
                 app.innerHTML = HomeView.render();
