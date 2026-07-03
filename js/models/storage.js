@@ -206,6 +206,70 @@ const StorageService = {
         }
     },
 
+    // Guardar reporte de Daños a Terceros
+    async saveDanosTerceros(reporte) {
+        const client = this.init();
+        if (!client) return false;
+
+        try {
+            // Subir fotos de evidencia
+            if (reporte.fotos && reporte.fotos.length > 0) {
+                for (let i = 0; i < reporte.fotos.length; i++) {
+                    const foto = reporte.fotos[i];
+                    if (foto.data && foto.data.startsWith('data:')) {
+                        const url = await this.uploadImage(`danos_terceros/${reporte.id}/foto_${i}.jpg`, foto.data);
+                        if (url) foto.data = url;
+                    }
+                }
+            }
+            
+            // Subir firma del supervisor
+            if (reporte.firmaSupervisor && reporte.firmaSupervisor.startsWith('data:')) {
+                const url = await this.uploadImage(`danos_terceros/${reporte.id}/firma.png`, reporte.firmaSupervisor);
+                if (url) reporte.firmaSupervisor = url;
+            }
+
+            const { error } = await client
+                .from('danos_terceros')
+                .insert({ id: reporte.id, content: reporte });
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error al guardar reporte de daños a terceros:", error);
+            alert(`Error al guardar: ${error.message}`);
+            return false;
+        }
+    },
+
+    // Guardar reporte de Golpe a Unidades
+    async saveGolpeUnidades(reporte) {
+        const client = this.init();
+        if (!client) return false;
+
+        try {
+            // Subir firma del chofer
+            if (reporte.firmaChofer && reporte.firmaChofer.startsWith('data:')) {
+                const url = await this.uploadImage(`golpes_unidades/${reporte.id}/firma_chofer.png`, reporte.firmaChofer);
+                if (url) reporte.firmaChofer = url;
+            }
+
+            // Aquí se podrían subir fotos si se añaden al formulario en el futuro
+
+            const { error } = await client
+                .from('golpes_unidades')
+                .insert({ id: reporte.id, content: reporte });
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error("Error al guardar reporte de golpe a unidades:", error);
+            alert(`Error al guardar: ${error.message}`);
+            return false;
+        }
+    },
+
+
     // Actualizar orden (para trabajo realizado y cambio de estatus)
     async updateOrden(id, updates) {
     const client = this.init();
@@ -322,6 +386,42 @@ const StorageService = {
         }
     },
     
+    // Cargar Daños a Terceros
+    async loadDanosTerceros() {
+        const client = this.init();
+        if (!client) return [];
+
+        try {
+            const { data, error } = await client
+                .from('danos_terceros')
+                .select('content')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data || []).map(row => row.content || {}).filter(item => item && Object.keys(item).length > 0);
+        } catch (error) {
+            console.error("Error al cargar reportes de daños a terceros:", error);
+            return [];
+        }
+    },
+
+    // Cargar Golpes a Unidades
+    async loadGolpesUnidades() {
+        const client = this.init();
+        if (!client) return [];
+
+        try {
+            const { data, error } = await client
+                .from('golpes_unidades')
+                .select('content')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data || []).map(row => row.content || {}).filter(item => item && Object.keys(item).length > 0);
+        } catch (error) {
+            console.error("Error al cargar reportes de golpes a unidades:", error);
+            return [];
+        }
+    },
+
     // Eliminar todos los reportes
     async clearReports() {
         const client = this.init();
@@ -344,6 +444,20 @@ const StorageService = {
         await client.from('supervisiones').delete().neq('id', '0');
     },
     
+    // Eliminar todos los daños a terceros
+    async clearDanosTerceros() {
+        const client = this.init();
+        if (!client) return;
+        await client.from('danos_terceros').delete().neq('id', '0');
+    },
+
+    // Eliminar todos los golpes a unidades
+    async clearGolpeUnidades() {
+        const client = this.init();
+        if (!client) return;
+        await client.from('golpes_unidades').delete().neq('id', '0');
+    },
+
     // Eliminar un reporte individual (pruebas)
     async deleteReport(id) {
         const client = this.init();
@@ -365,6 +479,22 @@ const StorageService = {
         const client = this.init();
         if (!client) return false;
         const { error } = await client.from('supervisiones').delete().eq('id', id);
+        return !error;
+    },
+
+    // Eliminar un reporte de daños a terceros
+    async deleteDanosTerceros(id) {
+        const client = this.init();
+        if (!client) return false;
+        const { error } = await client.from('danos_terceros').delete().eq('id', id);
+        return !error;
+    },
+
+    // Eliminar un reporte de golpe a unidades
+    async deleteGolpeUnidades(id) {
+        const client = this.init();
+        if (!client) return false;
+        const { error } = await client.from('golpes_unidades').delete().eq('id', id);
         return !error;
     },
 

@@ -213,6 +213,11 @@ const SUPABASE_CONFIG = {
     KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3bm93YmVhcHRpY2draGxka29pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTAzNTYsImV4cCI6MjA5MTA4NjM1Nn0.JXeRHyb3LMhMWdjCme6wLdZGunixTyJxX0YE_4L2644"
 };
 
+const TELEGRAM_CONFIG = {
+    BOT_TOKEN: "8024423516:AAGyMO5Lvm_kiiLkPexcdiOosGXBn1ZLmqU",
+    CHAT_ID: "-1004296031103" // <-- ID del canal "Supervisiones GEN"
+};
+
 // FUNCIÓN PARA DESCARGAR CATÁLOGOS AL INICIAR
 async function loadCatalogsFromDB() {
     if (typeof StorageService === 'undefined') return;
@@ -278,6 +283,7 @@ if (typeof window !== 'undefined') {
         getRoutesByType,
         LOGO_URL,
         SUPABASE: SUPABASE_CONFIG,
+        TELEGRAM: TELEGRAM_CONFIG,
         loadCatalogsFromDB
     };
 }

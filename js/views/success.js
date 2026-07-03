@@ -189,6 +189,85 @@ const SuccessView = {
                 </div>
             </div>
         `;
+    },
+
+    // Vista de éxito para daños a terceros
+    renderDanosTercerosSuccess(ultimo = null) {
+        return `
+            <div class="container">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="width: 80px; height: 80px; background: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                        <i class='bx bxs-car-crash' style="font-size: 40px; color: white;"></i>
+                    </div>
+                    
+                    <h2 style="color: #92400e; margin-bottom: 12px; font-size: 24px;">
+                        ¡BITÁCORA DE DAÑOS GUARDADA!
+                    </h2>
+                    
+                    <p style="color: #64748b; margin-bottom: 20px;">
+                        El reporte se ha registrado correctamente.
+                    </p>
+
+                    ${ultimo ? `
+                        <div class="card" style="background: #f8fafc; text-align: left; margin-bottom: 30px;">
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">📋 Resumen:</h4>
+                            <p style="font-size: 12px;"><strong>Supervisor:</strong> ${ultimo.supervisor}</p>
+                            <p style="font-size: 12px;"><strong>Fecha:</strong> ${ultimo.fecha}</p>
+                            <p style="font-size: 12px;"><strong>Chofer:</strong> ${ultimo.chofer} (Eco: ${ultimo.economico})</p>
+                            <p style="font-size: 12px;"><strong>Tercero:</strong> ${ultimo.nombreTercero}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button onclick="App.goToStep('danos-terceros')" class="btn" style="background: #d97706; color: white; flex: 1;">
+                            📝 Nuevo Reporte
+                        </button>
+                        <button onclick="App.goToStep('home')" class="btn btn-secondary" style="flex: 1;">
+                            🏠 Inicio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    // Vista de éxito para golpe a unidades
+    renderGolpeUnidadesSuccess(ultimo = null) {
+        return `
+            <div class="container">
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="width: 80px; height: 80px; background: #be123c; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                        <i class='bx bxs-car-mechanic' style="font-size: 40px; color: white;"></i>
+                    </div>
+                    
+                    <h2 style="color: #9f1239; margin-bottom: 12px; font-size: 24px;">
+                        ¡BITÁCORA DE GOLPE GUARDADA!
+                    </h2>
+                    
+                    <p style="color: #64748b; margin-bottom: 20px;">
+                        El reporte se ha registrado correctamente.
+                    </p>
+
+                    ${ultimo ? `
+                        <div class="card" style="background: #f8fafc; text-align: left; margin-bottom: 30px;">
+                            <h4 style="color: #1e293b; margin-bottom: 10px;">📋 Resumen:</h4>
+                            <p style="font-size: 12px;"><strong>Supervisor:</strong> ${ultimo.supervisor}</p>
+                            <p style="font-size: 12px;"><strong>Fecha:</strong> ${ultimo.fecha}</p>
+                            <p style="font-size: 12px;"><strong>Chofer:</strong> ${ultimo.chofer} (Eco: ${ultimo.economico})</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button onclick="App.goToStep('golpe-unidades')" class="btn" style="background: #be123c; color: white; flex: 1;">
+                            📝 Nuevo Reporte
+                        </button>
+                        <button onclick="App.goToStep('home')" class="btn btn-secondary" style="flex: 1;">
+                            🏠 Inicio
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 };
 
