@@ -74,7 +74,7 @@ const SegurosUnidadesController = {
                         <tr style="background:#0f172a; color:white; text-align:left;">
                             <th style="padding: 12px;">Unidad</th>
                             <th style="padding: 12px;">Aseguradora</th>
-                            <th style="padding: 12px;">Póliza</th>
+                            <th style="padding: 12px;">Inciso</th>
                             <th style="padding: 12px;">Vigencia</th>
                             <th style="padding: 12px;">Estado</th>
                             <th style="padding: 12px;">PDF</th>
@@ -99,8 +99,7 @@ const SegurosUnidadesController = {
                                         ${record.pdfUrl ? `<a href="${record.pdfUrl}" target="_blank" download="${this.escapeAttr(record.pdfName || `${record.unidad || 'seguro'}.pdf`)}" style="color:#2563eb; text-decoration:none; font-weight:600;">📄 Ver / Descargar</a>` : '<span style="color:#94a3b8;">Sin PDF</span>'}
                                     </td>
                                     <td style="padding: 12px;">
-                                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                                            ${record.pdfUrl ? `<button onclick="SegurosUnidadesController.downloadPdf('${record.id}')" style="padding:6px 10px; border:none; border-radius:8px; background:#2563eb; color:white; cursor:pointer;">Descargar</button>` : ''}
+                                   
                                             ${!isSupervisor ? `
                                                 <button onclick="SegurosUnidadesController.openModal('${record.id}')" style="padding:6px 10px; border:none; border-radius:8px; background:#f59e0b; color:white; cursor:pointer;">Editar</button>
                                                 <button onclick="SegurosUnidadesController.replacePdf('${record.id}')" style="padding:6px 10px; border:none; border-radius:8px; background:#0f766e; color:white; cursor:pointer;">Reemplazar PDF</button>
