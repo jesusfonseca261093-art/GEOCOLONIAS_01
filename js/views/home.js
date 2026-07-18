@@ -63,6 +63,10 @@ const HomeView = {
                                 <i class='bx bxs-car-mechanic' style="font-size: 22px;"></i> Golpe a Unidades
                             </button>
 
+                             <button onclick="App.goToStep('seguros-unidades')" class="btn" style="background: linear-gradient(135deg, #312E81 0%, #9f1239 100%); color: white;">
+                                <i class='bx bxs-truck' style="font-size: 22px;"></i> Seguros de unidades
+                            </button>
+
                             <button onclick="AuthController.logout()" class="btn btn-secondary">
                                 <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar sesion
                             </button>

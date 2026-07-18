@@ -41,33 +41,38 @@ const StorageService = {
         }
     },
 
-    // Helper: Subir imagen al bucket 'evidencias'
-    async uploadImage(path, base64) {
+    // Helper: Subir un archivo (imagen o PDF) a Supabase Storage
+    async uploadFile(path, dataUrl, bucketName = 'evidencias') {
         const client = this.init();
-        if (!client || !base64) return null;
+        if (!client || !dataUrl) return null;
 
         try {
-            const blob = this.base64ToBlob(base64);
+            const blob = this.base64ToBlob(dataUrl);
             if (!blob) return null;
 
             const { data, error } = await client.storage
-                .from('evidencias')
-                .upload(path, blob, { 
+                .from(bucketName)
+                .upload(path, blob, {
                     upsert: true,
-                    contentType: blob.type 
+                    contentType: blob.type || 'application/octet-stream'
                 });
 
             if (error) throw error;
 
             const { data: { publicUrl } } = client.storage
-                .from('evidencias')
+                .from(bucketName)
                 .getPublicUrl(path);
 
             return publicUrl;
         } catch (err) {
-            console.error('Error subiendo imagen:', err);
-            throw err; // Lanzar error para detener el guardado si falla la imagen
+            console.error('Error subiendo archivo a Supabase Storage:', err);
+            throw err;
         }
+    },
+
+    // Helper: Subir imagen al bucket 'evidencias'
+    async uploadImage(path, base64) {
+        return this.uploadFile(path, base64, 'evidencias');
     },
 
     // Guardar reportes localmente
@@ -420,6 +425,119 @@ const StorageService = {
             console.error("Error al cargar reportes de golpes a unidades:", error);
             return [];
         }
+    },
+
+    // Cargar seguros de unidades
+    async loadSegurosUnidades() {
+        const client = this.init();
+        if (!client) {
+            try {
+                return JSON.parse(localStorage.getItem('segurosUnidades') || '[]');
+            } catch (error) {
+                return [];
+            }
+        }
+
+        try {
+            const { data, error } = await client
+                .from('seguros_unidades')
+                .select('content')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return (data || []).map(row => row.content || {}).filter(item => item && Object.keys(item).length > 0);
+        } catch (error) {
+            console.error("Error al cargar seguros de unidades:", error);
+            return [];
+        }
+    },
+
+    async saveSeguroUnidad(record) {
+        const client = this.init();
+        const seguro = {
+            ...record,
+            id: record.id || String(Date.now())
+        };
+
+        if (!client) {
+            const seguros = JSON.parse(localStorage.getItem('segurosUnidades') || '[]');
+            const index = seguros.findIndex(item => item.id === seguro.id);
+            if (index >= 0) seguros[index] = seguro; else seguros.push(seguro);
+            localStorage.setItem('segurosUnidades', JSON.stringify(seguros));
+            return true;
+        }
+
+        try {
+            if (seguro.pdfUrl && seguro.pdfUrl.startsWith('data:')) {
+                const fileName = (seguro.pdfName || `seguro_${seguro.id}.pdf`).replace(/[^a-zA-Z0-9._-]/g, '_');
+                const uploadedUrl = await this.uploadFile(`seguros/${seguro.id}/${fileName}`, seguro.pdfUrl, 'evidencias');
+                if (uploadedUrl) {
+                    seguro.pdfUrl = uploadedUrl;
+                    seguro.pdfName = fileName;
+                }
+            }
+
+            const { error } = await client
+                .from('seguros_unidades')
+                .upsert({ id: seguro.id, content: seguro });
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error guardando seguro:', error);
+            alert(`Error al guardar: ${error.message}`);
+            return false;
+        }
+    },
+
+    async updateSeguroUnidadPdf(id, pdfUrl, pdfName) {
+        const client = this.init();
+        if (!client) {
+            const seguros = JSON.parse(localStorage.getItem('segurosUnidades') || '[]');
+            const index = seguros.findIndex(item => item.id === id);
+            if (index === -1) return false;
+            seguros[index] = { ...seguros[index], pdfUrl, pdfName };
+            localStorage.setItem('segurosUnidades', JSON.stringify(seguros));
+            return true;
+        }
+
+        try {
+            const { data, error: fetchError } = await client
+                .from('seguros_unidades')
+                .select('content')
+                .eq('id', id)
+                .single();
+            if (fetchError) throw fetchError;
+
+            let uploadedUrl = pdfUrl;
+            let uploadedName = pdfName;
+
+            if (pdfUrl && pdfUrl.startsWith('data:')) {
+                const fileName = (pdfName || `seguro_${id}.pdf`).replace(/[^a-zA-Z0-9._-]/g, '_');
+                uploadedUrl = await this.uploadFile(`seguros/${id}/${fileName}`, pdfUrl, 'evidencias');
+                uploadedName = fileName;
+            }
+
+            const seguro = { ...(data.content || {}), pdfUrl: uploadedUrl, pdfName: uploadedName };
+            const { error } = await client
+                .from('seguros_unidades')
+                .update({ content: seguro })
+                .eq('id', id);
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error actualizando PDF de seguro:', error);
+            return false;
+        }
+    },
+
+    async deleteSeguroUnidad(id) {
+        const client = this.init();
+        if (!client) {
+            const seguros = JSON.parse(localStorage.getItem('segurosUnidades') || '[]').filter(item => item.id !== id);
+            localStorage.setItem('segurosUnidades', JSON.stringify(seguros));
+            return true;
+        }
+        const { error } = await client.from('seguros_unidades').delete().eq('id', id);
+        return !error;
     },
 
     // Eliminar todos los reportes

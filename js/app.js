@@ -80,6 +80,7 @@ const App = {
         golpeUnidadesData: {
             firmaChofer: null
         },
+        segurosUnidadesData: {},
         firmaChofer: null,
         firmaTaller: null,
         userRole: null,
@@ -205,6 +206,11 @@ const App = {
                     GolpeUnidadesView.init();
                 }
                 break;
+            case 'seguros-unidades':
+                if (typeof SegurosUnidadesView !== 'undefined' && SegurosUnidadesView.init) {
+                    SegurosUnidadesView.init();
+                }
+                break;
         }
     },
     
@@ -274,6 +280,9 @@ const App = {
                 break;
             case 'golpe-unidades-success':
                 app.innerHTML = SuccessView.renderGolpeUnidadesSuccess(this.appState.ultimoReporte);
+                break;
+            case 'seguros-unidades':
+                app.innerHTML = SegurosUnidadesView.render();
                 break;
             default:
                 app.innerHTML = HomeView.render();
