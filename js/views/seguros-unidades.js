@@ -9,8 +9,8 @@ const SegurosUnidadesView = {
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom: 20px;">
                         <div>
                             <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color:#6366f1; font-weight:700;">Seguros de unidades</div>
-                            <h1 style="margin: 4px 0 0; font-size: 28px; color:#0f172a;">Gestión de pólizas y PDFs</h1>
-                            <p style="margin: 6px 0 0; color:#64748b;">Consulta, busca y administra los seguros de las unidades con permisos diferenciales por rol.</p>
+                            <h1 style="margin: 4px 0 0; font-size: 28px; color:#0f172a;">Gestión de pólizas</h1>
+                            
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
                             <button onclick="App.goToStep('home')" style="padding:10px 14px; border:none; border-radius:10px; background:#e2e8f0; color:#0f172a; cursor:pointer;">← Regresar</button>
