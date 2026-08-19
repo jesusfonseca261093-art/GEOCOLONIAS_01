@@ -9,6 +9,20 @@ const AdminController = {
     TIPO_SUPERVISION_RUTA: 'Supervisión en Ruta',
     TIPO_ATENCION_QUEJA: 'Atención a Queja',
 
+    isSlpLimitedUser() {
+        return typeof App !== 'undefined' && App.isChecklistOnlyUser && App.isChecklistOnlyUser();
+    },
+
+    ownsInspection(item) {
+        if (!this.isSlpLimitedUser()) return true;
+        const userEmail = App.appState.user?.email?.trim().toLowerCase() || '';
+        const userId = App.appState.user?.id || '';
+        return Boolean(item && (
+            (userId && String(item.creadoPorId || '') === String(userId)) ||
+            (userEmail && String(item.creadoPor || '').trim().toLowerCase() === userEmail)
+        ));
+    },
+
     // Identificar si es un registro de prueba (para no contarlo ni exportarlo)
     isTestRecord(item) {
         if (!item) return false;
@@ -107,6 +121,9 @@ const AdminController = {
 
     // Cambiar pestaña
     switchTab(tab) {
+        if (this.isSlpLimitedUser() && tab !== 'checklists') {
+            return alert('Este usuario solo puede consultar sus propias inspecciones.');
+        }
         App.appState.activeTab = tab;
         App.appState.filterStatus = 'all'; // Limpiar el filtro de tarjetas al cambiar de pestaña
         if (tab !== 'supervisiones') App.appState.selectedSupervisionIds = [];
@@ -322,6 +339,7 @@ const AdminController = {
         
         try {
             let items;
+            if (this.isSlpLimitedUser()) App.appState.activeTab = 'checklists';
             const activeTab = App.appState.activeTab;
 
             switch (activeTab) {
@@ -336,6 +354,10 @@ const AdminController = {
                 case 'supervisiones':
                 default:
                     items = await StorageService.loadSupervisiones(); break;
+            }
+
+            if (this.isSlpLimitedUser()) {
+                items = items.filter(item => this.ownsInspection(item));
             }
                         
             // ---- NUEVA LÓGICA: CÁLCULO ESTÁTICO DE MES Y HOY ----
@@ -763,10 +785,10 @@ const AdminController = {
     // Ver detalles
     async viewReport(id) {
         const r = (await StorageService.loadReports()).find(r=>r.id==id);
-        if (r) {
+        if (r && this.ownsInspection(r)) {
             ModalService.show(AdminView.renderReportDetails(r)); 
             if (this.isTestRecord(r)) this.highlightModalAsTest(id, 'checklists');
-        } else alert("No encontrado");
+        } else alert("No encontrado o no tienes permiso para consultar esta inspección.");
     },
     
     async viewOrden(id) {
@@ -844,6 +866,7 @@ const AdminController = {
     
     // Borrar registro de prueba en la BD
     async deleteTestRecord(id, tab) {
+        if (this.isSlpLimitedUser()) return alert('Este usuario no puede eliminar inspecciones.');
         if (!confirm("🚨 ¿Estás seguro de eliminar PERMANENTEMENTE este registro de prueba?\nEsta acción no se puede deshacer.")) return;
         
         ModalService.close();
@@ -1380,6 +1403,10 @@ const AdminController = {
         // Descartar registros de prueba para no exportarlos
         let filtered = data.filter(i => !this.isTestRecord(i));
 
+        if (this.isSlpLimitedUser()) {
+            filtered = filtered.filter(item => this.ownsInspection(item));
+        }
+
         filtered = filtered.filter(i => this.matchesDateFilters(
             i,
             App.appState.step === 'taller-panel' ? App.appState.filterTallerMonth : App.appState.filterMonth,
@@ -1649,6 +1676,7 @@ const AdminController = {
 
     // Limpiar todo
     async clearAllReports() {
+        if (this.isSlpLimitedUser()) return alert('Este usuario no puede eliminar inspecciones.');
         const code = prompt("Código de seguridad:");
         if (code !== this.SECRET_CLEAN_CODE) return alert("❌ Código incorrecto");
         if (!confirm("¿Eliminar todos los registros?")) return;

@@ -3,6 +3,8 @@
 const AdminView = {
     // Vista del panel SUPERVISOR
     renderPanel(appState) {
+        const slpLimited = typeof App !== 'undefined' && App.isChecklistOnlyUser && App.isChecklistOnlyUser();
+        if (slpLimited) appState.activeTab = 'checklists';
         const d = new Date();
         const cMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const cDate = `${cMonth}-${String(d.getDate()).padStart(2, '0')}`;
@@ -11,7 +13,7 @@ const AdminView = {
         const tBase = appState.filterDate === cDate;
 
         return `
-            <div>
+            <div class="${slpLimited ? 'slp-panel' : ''}">
                 <div class="header" style="background: #1e40af; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 12px 16px; width: 100%; box-sizing: border-box;">
                     <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                         <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 24px; padding: 4px; width: auto; height: auto;">
@@ -41,8 +43,14 @@ const AdminView = {
                 </div>
                 
                 <div class="container" style="padding: 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+                    ${slpLimited ? `
+                        <div class="slp-panel-intro">
+                            <div><span>Historial personal</span><h2>Mis inspecciones</h2><p>Aquí aparecen únicamente los check lists registrados con tu cuenta.</p></div>
+                            <div class="slp-panel-intro-icon"><i class='bx bx-clipboard'></i></div>
+                        </div>
+                    ` : ''}
                     <!-- Filtros -->
-                    <div class="card" style="margin-bottom: 20px; box-sizing: border-box; width: 100%;">
+                    <div class="card admin-filter-card" style="margin-bottom: 20px; box-sizing: border-box; width: 100%;">
                         <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Filtrar por mes</label>
@@ -78,16 +86,16 @@ const AdminView = {
                                         style="color: #0284c7; background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                     <i class='bx bx-filter-alt'></i> Quitar filtros
                                 </button>
-                                <button onclick="AdminController.clearAllReports()" 
+                                ${slpLimited ? '' : `<button onclick="AdminController.clearAllReports()" 
                                         style="color: #dc2626; background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                     <i class='bx bx-trash'></i> Eliminar todo
-                                </button>
+                                </button>`}
                             </div>
                         </div>
                     </div>
 
                     <!-- Estadísticas rápidas -->
-                    <div id="adminGlobalStats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 24px;">
+                    <div id="adminGlobalStats" class="admin-stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 24px;">
                         <!-- Tarjeta del Mes -->
                         <div style="background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                             <div style="font-size: 11px; font-weight: 700; color: #475569; text-align: center; margin-bottom: 10px; letter-spacing: 0.5px;">📅 TODO EL MES</div>
@@ -127,11 +135,12 @@ const AdminView = {
                     </div>
                     
                     <!-- Pestañas (Segmented Control) -->
-                    <div style="display: flex; margin-bottom: 24px; background: #f1f5f9; padding: 6px; border-radius: 16px; flex-wrap: wrap; gap: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                    <div class="admin-tabs" style="display: flex; margin-bottom: 24px; background: #f1f5f9; padding: 6px; border-radius: 16px; flex-wrap: wrap; gap: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                         <button id="tabChecklistsBtn" onclick="AdminController.switchTab('checklists')" 
                                 style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'checklists' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'checklists' ? '#1e40af' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'checklists' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             📋 Inspecciones
                         </button>
+                        ${slpLimited ? '' : `
                         <button id="tabOrdenesBtn" onclick="AdminController.switchTab('ordenes')" 
                                 style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'ordenes' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'ordenes' ? '#f59e0b' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'ordenes' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             🔧 Órdenes
@@ -150,6 +159,7 @@ const AdminView = {
                                 style="flex: 1; min-width: 120px; padding: 10px 16px; background: ${appState.activeTab === 'mapas' ? 'white' : 'transparent'}; color: ${appState.activeTab === 'mapas' ? '#10b981' : '#64748b'}; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: ${appState.activeTab === 'mapas' ? '0 4px 6px rgba(0,0,0,0.05)' : 'none'};">
                             🗺️ Mapas de Quejas
                         </button>
+                        `}
                     </div>
                     
                     <!-- Sub-pestañas divisoras para Inspecciones -->
@@ -175,7 +185,7 @@ const AdminView = {
 
                     <!-- Gráfica de Resumen (solo para no mapas) -->
                     ${appState.activeTab !== 'mapas' ? `
-                        <div class="card" style="margin-bottom: 16px;">
+                        <div class="card admin-chart-card" style="margin-bottom: 16px;">
                             <h4 id="chartTitle" style="margin-bottom: 10px; color: #1e293b; font-size: 14px;">📊 Resumen</h4>
                             <div style="height: 200px; position: relative;"><canvas id="statsChart"></canvas></div>
                         </div>

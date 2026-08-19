@@ -17,7 +17,7 @@ const App = {
         filterTipoRuta: 'Todos',
         filterTallerStatus: 'all',
         activeTab: 'checklists',
-        formData: { operador: '', eco: '', km: '', ruta: '', observaciones: '' },
+        formData: { operador: '', eco: '', km: '', ruta: '', observaciones: '', fecha: new Date().toLocaleDateString('en-CA') },
         ordenData: { 
             unidad: '',
             operador: '',
@@ -94,16 +94,27 @@ const App = {
         return this.appState.userRole === 'geocercas' || email === this.geocercasOnlyEmail;
     },
 
+    isChecklistOnlyUser() {
+        const email = this.appState.user?.email?.trim().toLowerCase() || '';
+        return this.appState.userRole === 'slp' || email.startsWith('slp');
+    },
+
     canAccessStep(step) {
+        if (this.isChecklistOnlyUser()) {
+            return ['login', 'home', 'form', 'checklist-verificar', 'success', 'admin-panel'].includes(step);
+        }
         if (!this.isGeocercasOnlyUser()) return true;
         return ['login', 'home', 'geocercas'].includes(step);
     },
 
     updateGlobalNavigation() {
         const onlyGeocercas = this.isGeocercasOnlyUser();
+        const onlyChecklist = this.isChecklistOnlyUser();
         document.querySelectorAll('[data-nav-step]').forEach(link => {
             const step = link.getAttribute('data-nav-step');
-            link.style.display = onlyGeocercas && step !== 'geocercas' ? 'none' : '';
+            const hiddenForGeocercas = onlyGeocercas && step !== 'geocercas';
+            const hiddenForChecklist = onlyChecklist && !['home', 'form', 'admin-panel'].includes(step);
+            link.style.display = hiddenForGeocercas || hiddenForChecklist ? 'none' : '';
         });
     },
 
@@ -112,13 +123,25 @@ const App = {
         // --- CANDADO DE SEGURIDAD POR ROLES ---
         const role = this.appState.userRole;
 
+        if (step === 'admin-panel' && this.isChecklistOnlyUser()) {
+            this.appState.activeTab = 'checklists';
+            this.appState.filterMonth = '';
+            this.appState.filterDate = '';
+            this.appState.filterSearch = '';
+            this.appState.filterStatus = 'all';
+            this.appState.filterTipoRuta = 'Todos';
+        }
+
         if (!this.canAccessStep(step)) {
-            return alert("Acceso denegado: este usuario solo puede consultar Geocercas.");
+            const message = this.isChecklistOnlyUser()
+                ? "Acceso denegado: este usuario solo puede crear nuevos check lists."
+                : "Acceso denegado: este usuario solo puede consultar Geocercas.";
+            return alert(message);
         }
         
         // Bloquear Paneles a cualquier rol que no sea admin
         if (step === 'admin-panel' || step === 'taller-panel' || step === 'geocercas-edicion') {
-            const adminRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor', 'taller'];
+            const adminRoles = ['admin', 'cilindros', 'autotanque', 'estaciones', 'supervisor', 'taller', 'slp'];
             if (!adminRoles.includes(role)) {
                 if (step === 'geocercas-edicion') {
                     const pwd = prompt("🔐 Clave de acceso para edición de mapas:");
