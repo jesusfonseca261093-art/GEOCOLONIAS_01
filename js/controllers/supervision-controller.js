@@ -4,6 +4,8 @@ const SupervisionController = {
     // Clave de acceso para supervisión
     SUPERVISION_KEY: "nieto2025",
 
+    cameraStream: null,
+
     ENCUESTA_DOMICILIO_FIELDS: [
         'encuestaTratoVendedor',
         'encuestaClaridadVendedor',
@@ -385,6 +387,114 @@ const SupervisionController = {
                 </div>
             ` : '';
         }
+    },
+
+    // Abre la cámara dentro de la página. Evita enviar al usuario a la app de
+    // cámara, cambio durante el cual Android puede descartar y reiniciar la pestaña.
+    async openSupervisionCamera(appState) {
+        const fotos = appState.supervisionData.evidenciasFotos || [];
+        if (fotos.length >= 5) {
+            alert('Solo puedes adjuntar máximo 5 fotos.');
+            return;
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+            alert('La cámara integrada no está disponible en este navegador. Usa "Seleccionar de galería".');
+            return;
+        }
+
+        this.closeSupervisionCamera();
+
+        const modal = document.createElement('div');
+        modal.id = 'supervisionCameraModal';
+        modal.style.cssText = 'position:fixed;inset:0;z-index:10000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);box-sizing:border-box;';
+        modal.innerHTML = `
+            <video id="supervisionCameraVideo" autoplay playsinline muted
+                   style="width:100%;max-height:calc(100vh - 145px);object-fit:contain;background:#000;"></video>
+            <div style="width:100%;max-width:520px;padding:14px 0;display:flex;gap:10px;">
+                <button type="button" onclick="SupervisionController.closeSupervisionCamera()"
+                        style="flex:1;padding:13px;border:0;border-radius:8px;background:#475569;color:#fff;font-size:15px;">Cerrar</button>
+                <button type="button" id="supervisionCameraCapture"
+                        onclick="SupervisionController.captureSupervisionPhoto(App.appState)"
+                        style="flex:2;padding:13px;border:0;border-radius:8px;background:#0867ec;color:#fff;font-size:15px;font-weight:600;">📸 Capturar</button>
+            </div>
+            <div id="supervisionCameraCount" style="color:#fff;font-size:13px;">${fotos.length} de 5 fotos</div>
+        `;
+        document.body.appendChild(modal);
+
+        try {
+            this.cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 }
+                },
+                audio: false
+            });
+            const video = document.getElementById('supervisionCameraVideo');
+            if (!video) throw new Error('No se encontró la vista de la cámara.');
+            video.srcObject = this.cameraStream;
+            await video.play();
+        } catch (error) {
+            console.error('No se pudo abrir la cámara integrada:', error);
+            this.closeSupervisionCamera();
+            alert('No fue posible abrir la cámara. Revisa el permiso de cámara del navegador o usa "Seleccionar de galería".');
+        }
+    },
+
+    captureSupervisionPhoto(appState) {
+        const video = document.getElementById('supervisionCameraVideo');
+        const button = document.getElementById('supervisionCameraCapture');
+        if (!video || video.readyState < 2 || !video.videoWidth) {
+            alert('La cámara todavía está iniciando. Intenta nuevamente.');
+            return;
+        }
+
+        if (!appState.supervisionData.evidenciasFotos) {
+            appState.supervisionData.evidenciasFotos = [];
+        }
+        const fotos = appState.supervisionData.evidenciasFotos;
+        if (fotos.length >= 5) {
+            this.closeSupervisionCamera();
+            alert('Se alcanzó el máximo de 5 fotos.');
+            return;
+        }
+
+        if (button) button.disabled = true;
+        try {
+            const maxSize = 1024;
+            const scale = Math.min(maxSize / video.videoWidth, maxSize / video.videoHeight, 1);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+            canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+            const ctx = canvas.getContext('2d', { alpha: false });
+            if (!ctx) throw new Error('El dispositivo no pudo generar la captura.');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            fotos.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                data: canvas.toDataURL('image/jpeg', 0.72),
+                name: `captura-${Date.now()}.jpg`
+            });
+            this.renderPhotoPreview(appState);
+
+            const count = document.getElementById('supervisionCameraCount');
+            if (count) count.textContent = `${fotos.length} de 5 fotos`;
+            if (fotos.length >= 5) this.closeSupervisionCamera();
+        } catch (error) {
+            console.error('No se pudo capturar la foto:', error);
+            alert(error.message || 'No se pudo capturar la foto.');
+        } finally {
+            if (button && document.body.contains(button)) button.disabled = false;
+        }
+    },
+
+    closeSupervisionCamera() {
+        if (this.cameraStream) {
+            this.cameraStream.getTracks().forEach(track => track.stop());
+            this.cameraStream = null;
+        }
+        document.getElementById('supervisionCameraModal')?.remove();
     },
 
     // Reduce la foto sin convertir primero el archivo original completo a Base64.

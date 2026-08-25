@@ -395,7 +395,7 @@ const SupervisionView = {
                                        onchange="SupervisionController.handlePhotoUpload(this, App.appState)">
                                 
                                 <button type="button" 
-                                        onclick="document.getElementById('supervisionFotoCamara').click()"
+                                        onclick="SupervisionController.openSupervisionCamera(App.appState)"
                                         style="width: 100%; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; font-size: 14px; color: #64748b; margin-bottom: 10px;">
                                     <i class='bx bx-camera'></i> Tomar foto
                                 </button>
