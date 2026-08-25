@@ -387,8 +387,67 @@ const SupervisionController = {
         }
     },
 
+    // Reduce la foto sin convertir primero el archivo original completo a Base64.
+    // Así se evitan picos de memoria al regresar de la cámara en un celular.
+    async compressSupervisionPhoto(file) {
+        const maxSize = 1024;
+        let imageSource = null;
+        let objectUrl = null;
+
+        try {
+            if (typeof createImageBitmap === 'function') {
+                imageSource = await createImageBitmap(file, {
+                    resizeWidth: maxSize,
+                    resizeQuality: 'high',
+                    imageOrientation: 'from-image'
+                });
+            } else {
+                objectUrl = URL.createObjectURL(file);
+                imageSource = await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                    img.src = objectUrl;
+                });
+            }
+
+            const sourceWidth = imageSource.naturalWidth || imageSource.width;
+            const sourceHeight = imageSource.naturalHeight || imageSource.height;
+            if (!sourceWidth || !sourceHeight) {
+                throw new Error('La imagen no tiene dimensiones válidas.');
+            }
+
+            const scale = Math.min(maxSize / sourceWidth, maxSize / sourceHeight, 1);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+            canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+
+            const ctx = canvas.getContext('2d', { alpha: false });
+            if (!ctx) throw new Error('El dispositivo no pudo procesar la imagen.');
+            ctx.drawImage(imageSource, 0, 0, canvas.width, canvas.height);
+
+            const compressedBlob = await new Promise((resolve, reject) => {
+                canvas.toBlob(
+                    blob => blob ? resolve(blob) : reject(new Error('No se pudo comprimir la imagen.')),
+                    'image/jpeg',
+                    0.72
+                );
+            });
+
+            return await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('No se pudo preparar la imagen.'));
+                reader.readAsDataURL(compressedBlob);
+            });
+        } finally {
+            if (imageSource && typeof imageSource.close === 'function') imageSource.close();
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        }
+    },
+
     // Manejar carga de fotos (MÚLTIPLES)
-    handlePhotoUpload(input, appState) {
+    async handlePhotoUpload(input, appState) {
         const files = Array.from(input.files);
         if (files.length === 0) return;
         
@@ -408,39 +467,34 @@ const SupervisionController = {
             alert(`Solo se agregarán ${espaciosDisponibles} foto(s). El máximo es 5.`);
         }
         
-        let processed = 0;
-        filesToProcess.forEach((file, index) => {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const maxSize = 1024;
-                    const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-                    canvas.width = Math.round(img.width * scale);
-                    canvas.height = Math.round(img.height * scale);
-                    
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
-                    appState.supervisionData.evidenciasFotos.push({
-                        id: Date.now() + index + Math.floor(Math.random() * 1000),
-                        data: canvas.toDataURL('image/jpeg', 0.75),
-                        name: file.name
-                    });
+        input.disabled = true;
 
-                    processed++;
-                    if (processed === filesToProcess.length) {
-                        this.renderPhotoPreview(appState);
-                        input.value = '';
-                    }
-                };
-                img.src = e.target.result;
-            };
-            
-            reader.readAsDataURL(file);
-        });
+        try {
+            // Una foto por vez: no mantiene varias capturas grandes decodificadas.
+            for (let index = 0; index < filesToProcess.length; index++) {
+                const file = filesToProcess[index];
+                if (!file.type.startsWith('image/')) {
+                    throw new Error(`El archivo ${file.name} no es una imagen compatible.`);
+                }
+
+                const compressedData = await this.compressSupervisionPhoto(file);
+                appState.supervisionData.evidenciasFotos.push({
+                    id: Date.now() + index + Math.floor(Math.random() * 1000),
+                    data: compressedData,
+                    name: file.name
+                });
+                this.renderPhotoPreview(appState);
+
+                // Permite pintar la vista y liberar recursos entre imágenes.
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        } catch (error) {
+            console.error('Error procesando evidencia fotográfica:', error);
+            alert(`No fue posible procesar la foto. ${error.message || 'Intenta de nuevo o selecciona una foto de la galería.'}`);
+        } finally {
+            input.value = '';
+            input.disabled = false;
+        }
     },
 
     // Eliminar foto específica
