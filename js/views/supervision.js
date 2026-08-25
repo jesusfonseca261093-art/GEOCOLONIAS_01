@@ -9,7 +9,8 @@ const SupervisionView = {
         'SANCHEZ ROMERO ROBERTO',
         'MARTINEZ CABRERA ARTURO',
         'LOPEZ SORIA JOSE ALBERTO',
-        "FONSECA CHAVEZ JOSE DE JESUS"
+        "MARTINEZ AVILA LUIS FELIPE"
+        
 
     ],
 

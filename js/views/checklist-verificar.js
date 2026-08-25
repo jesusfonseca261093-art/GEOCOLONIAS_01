@@ -2,7 +2,9 @@
 
 const ChecklistVerificarView = {
     render(appState) {
-        const now = new Date();
+        const now = (typeof FormController !== 'undefined' && FormController.getReportDate)
+            ? FormController.getReportDate(appState)
+            : new Date();
         
         // Construir un objeto "reporte" borrador para reutilizar la vista de detalles
         const draftReport = {
@@ -17,7 +19,7 @@ const ChecklistVerificarView = {
             observaciones: appState.formData.observaciones || 'Ninguna',
             firma: appState.signature || null,
             fecha: now.toLocaleDateString('es-MX'),
-            hora: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
         };
 
         // Aprovechamos la función de AdminView para generar el formato

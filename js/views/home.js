@@ -3,9 +3,10 @@
 const HomeView = {
     render() {
         const onlyGeocercas = typeof App !== 'undefined' && App.isGeocercasOnlyUser && App.isGeocercasOnlyUser();
+        const onlyChecklist = typeof App !== 'undefined' && App.isChecklistOnlyUser && App.isChecklistOnlyUser();
 
         return `
-            <div>
+            <div class="${onlyChecklist ? 'slp-home' : ''}">
                 <!-- Header Moderno con Logo y MenÃº -->
                 <div class="header" style="background: #1e40af; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
@@ -16,19 +17,42 @@ const HomeView = {
                     </div>
                 </div>
 
-                <div class="container" style="margin-top: 15px;">
-                    <div style="text-align: center; padding: 20px;">
+                <div class="container home-main-container" style="margin-top: 15px;">
+                    <div class="home-welcome" style="text-align: center; padding: 20px;">
+                    ${onlyChecklist ? `
+                    <div class="slp-welcome-icon"><i class='bx bx-check-shield'></i></div>
+                    <span class="slp-section-kicker">Portal SLP</span>
+                    <h1>Control de inspecciones</h1>
+                    <p>Registra un nuevo check list o consulta el historial de tus inspecciones.</p>
+                    ` : `
                     <h1 style="font-size: 32px; font-weight: 800; color: #1e293b; margin-bottom: 8px;">
                         Gen <span style="color: #dc2626;">Supervision</span>
                     </h1>
                     <p style="color: #64748b; font-size: 12px; margin-bottom: 30px;">
                         Control de unidades - Plantas Gen
                     </p>
+                    `}
                     
                     <div class="home-menu-grid">
                         ${onlyGeocercas ? `
                             <button onclick="App.goToStep('geocercas')" class="btn" style="background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%); color: white;">
                                 <i class='bx bx-map-alt' style="font-size: 22px;"></i> Geocercas
+                            </button>
+                        ` : onlyChecklist ? `
+                            <button onclick="App.goToStep('form')" class="btn btn-primary slp-action-card slp-action-primary">
+                                <span class="slp-action-icon"><i class='bx bx-list-check'></i></span>
+                                <span><strong>Nuevo check list</strong><small>Crear una inspección</small></span>
+                                <i class='bx bx-chevron-right slp-action-arrow'></i>
+                            </button>
+
+                            <button onclick="App.goToStep('admin-panel')" class="btn slp-action-card slp-action-secondary">
+                                <span class="slp-action-icon"><i class='bx bx-history'></i></span>
+                                <span><strong>Mis inspecciones</strong><small>Consultar el historial</small></span>
+                                <i class='bx bx-chevron-right slp-action-arrow'></i>
+                            </button>
+
+                            <button onclick="AuthController.logout()" class="btn btn-secondary">
+                                <i class='bx bx-log-out' style="font-size: 22px;"></i> Cerrar sesión
                             </button>
                         ` : `
                             <button onclick="App.goToStep('form')" class="btn btn-primary">
@@ -73,7 +97,7 @@ const HomeView = {
                         `}
                     </div>
                     
-                    ${onlyGeocercas ? '' : `
+                    ${onlyGeocercas || onlyChecklist ? '' : `
                     <div class="stats-grid home-stats-grid">
                         <div class="stat-card">
                             <div class="stat-value stat-checklist" id="stat-checklist">--</div>

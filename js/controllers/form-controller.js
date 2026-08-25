@@ -1,6 +1,14 @@
 // form-controller.js - Controlador para el formulario de checklist
 
 const FormController = {
+    getReportDate(appState) {
+        if (!App.isChecklistOnlyUser() || !appState.formData.fecha) return new Date();
+        const parts = appState.formData.fecha.split('-').map(Number);
+        if (parts.length !== 3 || parts.some(Number.isNaN)) return new Date();
+        // Mediodía evita que la conversión de zona horaria cambie el día seleccionado.
+        return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+    },
+
     // Actualizar datos del formulario
     updateFormData(field, value, appState) {
         appState.formData[field] = value;
@@ -64,6 +72,10 @@ const FormController = {
             alert("Por favor, selecciona el tipo de ruta.");
             return;
         }
+        if (App.isChecklistOnlyUser() && !appState.formData.fecha) {
+            alert("Por favor, selecciona la fecha del check list.");
+            return;
+        }
         if (!appState.formData.operador || !appState.formData.eco || 
             !appState.formData.km || !appState.formData.ruta) {
             alert("Por favor, completa todos los campos de información.");
@@ -89,6 +101,10 @@ const FormController = {
         // Validaciones
         if (!appState.formData.tipoRuta) {
             alert("Por favor, selecciona el tipo de ruta.");
+            return;
+        }
+        if (App.isChecklistOnlyUser() && !appState.formData.fecha) {
+            alert("Por favor, selecciona la fecha del check list.");
             return;
         }
         
@@ -163,7 +179,7 @@ const FormController = {
         App.render();
         
         // Crear reporte
-        const now = new Date();
+        const now = this.getReportDate(appState);
         const report = {
             tipoRuta: appState.formData.tipoRuta,
             operador: appState.formData.operador.toUpperCase(),
@@ -174,8 +190,10 @@ const FormController = {
             fotos: { ...appState.photos },
             observaciones: appState.formData.observaciones || '',
             firma: appState.signature,
+            creadoPor: App.appState.user?.email?.trim().toLowerCase() || '',
+            creadoPorId: App.appState.user?.id || '',
             fecha: now.toLocaleDateString('es-MX'),
-            hora: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+            hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
             timestamp: now.getTime()
         };
         
@@ -195,7 +213,8 @@ const FormController = {
                     eco: '', 
                     km: '', 
                     ruta: '', 
-                    observaciones: '' 
+                    observaciones: '',
+                    fecha: new Date().toLocaleDateString('en-CA')
                 };
                 appState.isSubmitting = false;
                 

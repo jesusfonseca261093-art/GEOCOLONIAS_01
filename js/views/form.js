@@ -12,7 +12,7 @@ const FormView = {
         const inspectionPoints = selectedRouteType ? CONFIG.getInspectionPointsByRouteType(selectedRouteType) : [];
         
         return `
-            <div>
+            <div class="${App.isChecklistOnlyUser() ? 'slp-checklist-page' : ''}">
                 <div class="header" style="background: #1e40af; border-bottom: none; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <button onclick="toggleMenu()" class="btn-icon" style="color: white; font-size: 26px;">
@@ -29,15 +29,30 @@ const FormView = {
                 <div class="container" style="max-width: 800px; margin: 0 auto; padding: 24px 16px;">
                     <form id="checklistForm" onsubmit="event.preventDefault(); FormController.previewChecklist(App.appState)">
                         <!-- Información básica -->
-                        <div class="card card-hover" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); margin-bottom: 24px; border: 1px solid #f1f5f9;">
-                            <h3 style="margin-bottom: 20px; color: #0f172a; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        <div class="card card-hover inspection-info-card" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); margin-bottom: 24px; border: 1px solid #f1f5f9;">
+                            <h3 class="inspection-section-title" style="margin-bottom: 20px; color: #0f172a; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                                 <i class='bx bx-file' style="font-size: 24px; color: #3b82f6;"></i> Información de la Unidad
                             </h3>
+
+                            ${App.isChecklistOnlyUser() ? `
+                                <div class="form-group slp-date-card">
+                                    <div class="slp-date-icon"><i class='bx bx-calendar'></i></div>
+                                    <div class="slp-date-content">
+                                    <label for="fechaChecklist">Fecha del check list <span style="color: #ef4444;">*</span></label>
+                                    <input type="date"
+                                           id="fechaChecklist"
+                                           value="${appState.formData.fecha || new Date().toLocaleDateString('en-CA')}"
+                                           onchange="FormController.updateFormData('fecha', this.value, App.appState)"
+                                           required>
+                                    <p style="font-size: 11px; color: #64748b; margin-top: 6px;">Selecciona la fecha que debe quedar registrada en el reporte.</p>
+                                    </div>
+                                </div>
+                            ` : ''}
                             
                             <!-- SELECTOR DE TIPO DE RUTA -->
                             <div class="form-group">
                                 <label style="display: block; font-size: 14px; font-weight: 500; color: #475569; margin-bottom: 10px;">Tipo de Ruta <span style="color: #ef4444;">*</span></label>
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px;">
+                                <div class="route-type-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px;">
                                     ${CONFIG.TIPOS_RUTA.map(tipo => `
                                         <button type="button"
                                                 class="menu-item"
@@ -124,8 +139,8 @@ const FormView = {
                         
                         <!-- Checklist de inspección (solo si hay tipo seleccionado) -->
                         ${selectedRouteType ? `
-                            <div class="card">
-                                <h3 style="margin-bottom: 16px; color: #1e293b;">
+                            <div class="card inspection-checklist-card">
+                                <h3 class="inspection-section-title" style="margin-bottom: 16px; color: #1e293b;">
                                     🔍 Checklist de Inspección - 
                                     <span style="color: #1e40af; background: #dbeafe; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
                                         ${selectedRouteType}
@@ -201,14 +216,14 @@ const FormView = {
                                     `;
                                 }).join('')}
                                 
-                                <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px;">
+                                <div class="inspection-critical-note" style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px;">
                                     <p style="font-size: 11px; color: #92400e;">
                                         <strong>Nota:</strong> Los puntos marcados como CRÍTICO deben estar aprobados para considerar la inspección como válida.
                                     </p>
                                 </div>
                             </div>
                         ` : `
-                            <div class="card" style="text-align: center; padding: 40px;">
+                            <div class="card inspection-empty-state" style="text-align: center; padding: 40px;">
                                 <div style="font-size: 40px; margin-bottom: 16px;">👆</div>
                                 <h3 style="color: #64748b;">Selecciona un tipo de ruta para comenzar</h3>
                                 <p style="font-size: 12px; color: #94a3b8;">Los puntos de inspección cambiarán según el tipo seleccionado</p>
@@ -217,8 +232,8 @@ const FormView = {
                         
                         <!-- Comentarios adicionales (solo si hay tipo seleccionado) -->
                         ${selectedRouteType ? `
-                            <div class="card">
-                                <h3 style="margin-bottom: 16px; color: #1e293b;">💭 Comentarios Adicionales</h3>
+                            <div class="card inspection-comments-card">
+                                <h3 class="inspection-section-title" style="margin-bottom: 16px; color: #1e293b;"><i class='bx bx-message-rounded-dots'></i> Comentarios adicionales</h3>
                                 
                                 <div class="form-group">
                                     <label>Observaciones (Opcional)</label>
@@ -230,8 +245,8 @@ const FormView = {
                             </div>
                             
                             <!-- Firma de conformidad -->
-                            <div class="card">
-                                <h3 style="margin-bottom: 16px; color: #1e293b;">✍️ Firma de Conformidad</h3>
+                            <div class="card inspection-signature-card">
+                                <h3 class="inspection-section-title" style="margin-bottom: 16px; color: #1e293b;"><i class='bx bx-edit'></i> Firma de conformidad</h3>
                                 
                                 <div class="signature-container">
                                     <canvas id="sigCanvas"></canvas>
@@ -251,12 +266,12 @@ const FormView = {
                             </div>
                             
                             <!-- Botón enviar -->
-                            <div style="padding: 20px;">
+                            <div class="inspection-submit-wrap" style="padding: 20px;">
                                 <button type="submit" 
-                                        class="btn btn-warning"
+                                        class="btn btn-warning inspection-preview-btn"
                                         ${appState.isSubmitting ? 'disabled' : ''}
                                         style="font-size: 18px;">
-                                    ${appState.isSubmitting ? 'Enviando...' : '👁️ Previsualizar Checklist'}
+                                    ${appState.isSubmitting ? 'Enviando...' : "<i class='bx bx-show'></i> Revisar y continuar"}
                                 </button>
                             </div>
                         ` : ''}
