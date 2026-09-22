@@ -57,10 +57,6 @@ const GeocercasView = {
                             </div>
                         </div>
 
-                        <button type="button" onclick="GeocercasView.openRouteSubstitution()" class="btn btn-primary" style="width: 100%; margin-bottom: 20px; padding: 12px;">
-                            <i class='bx bx-transfer'></i> Referenciador de sustitución
-                        </button>
-
                         <!-- Botón Todas las rutas -->
                         <button id="btn-filter-all" onclick="GeocercasView.filterRoutes('all')" class="menu-item filter-btn"
                                 style="width: 100%; background: #1e40af; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(30, 64, 175, 0.2);">
@@ -267,99 +263,6 @@ const GeocercasView = {
         } else if (this.map) {
             this.map.setView([20.588793, -100.389889], 11);
         }
-    },
-
-    getSubstitutionRoutes() {
-        const routes = new Map();
-        for (const source of this.allKmlData?.features || []) {
-            let props = source.properties;
-            if (typeof props === 'string') {
-                try { props = JSON.parse(props); } catch (_) { continue; }
-            }
-            const feature = { properties: props || {} };
-            const name = this.getRouteName(feature);
-            const key = this.normalizeText(name);
-            if (!key) continue;
-            if (!routes.has(key)) routes.set(key, { name, colonias: new Map(), incomplete: false });
-            const route = routes.get(key);
-            // Preserve list boundaries before removing markup; never insert source HTML.
-            const doc = new DOMParser().parseFromString(
-                String(this.getFeatureDescription(feature))
-                    .replace(/<br\s*\/?>|<\/(?:p|div|li|tr)>/gi, '\n'), 'text/html');
-            const description = (doc.body.textContent || '')
-                .replace(/SUPERVISOR\s*:[\s\S]*$/i, '')
-                .replace(/^\s*descripci[oó]n\s*:\s*(?:colonias?\b\s*:?)?\s*/i, '')
-                .replace(/^\s*colonias?(?:[ \t]*:[ \t]*|[ \t]*\r?\n|[ \t]*$)/i, '');
-            const names = description.split(/[\r\n,;]+/)
-                .map(value => value.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, '').trim())
-                .filter(value => value && !/^(?:sin colonias(?: especificadas)?|sin datos|n\/a)$/i.test(value));
-            if (!names.length) route.incomplete = true;
-            for (const colonia of names) route.colonias.set(this.normalizeText(colonia), colonia);
-        }
-        return [...routes.values()].sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }));
-    },
-
-    compareRouteColonias(first, second) {
-        return {
-            firstOnly: [...first.colonias].filter(([key]) => !second.colonias.has(key)).map(([, name]) => name),
-            secondOnly: [...second.colonias].filter(([key]) => !first.colonias.has(key)).map(([, name]) => name),
-            shared: [...first.colonias].filter(([key]) => second.colonias.has(key)).map(([, name]) => name)
-        };
-    },
-
-    openRouteSubstitution() {
-        if (!this.allKmlData) {
-            alert('Espera a que se carguen las rutas. Si ocurrió un error, vuelve a cargar Geocercas.');
-            return;
-        }
-        this.substitutionRoutes = this.getSubstitutionRoutes();
-        if (this.substitutionRoutes.length < 2) {
-            alert('Se necesitan al menos dos rutas con nombre para hacer la comparación.');
-            return;
-        }
-        const options = '<option value="">Selecciona una ruta</option>' + this.substitutionRoutes
-            .map((route, index) => `<option value="${index}">${this.escapeHtml(route.name)}</option>`).join('');
-        ModalService.show(`
-            <section role="dialog" aria-modal="true" aria-labelledby="substitution-title" style="padding: 24px; color: #334155;">
-                <h2 id="substitution-title" style="font-size: 20px; margin-bottom: 12px;">Referenciador de sustitución de ruta</h2>
-                <p style="font-size: 13px; margin-bottom: 16px;">Selecciona dos rutas para consultar qué colonias adquiriría cada una si cubriera a la otra. La comparación usa las colonias registradas actualmente; no confirma cambios históricos ni guarda reasignaciones.</p>
-                <div style="display: flex; flex-wrap: wrap; gap: 16px;">
-                    ${['A', 'B'].map(letter => `<div style="flex: 1; min-width: 180px;">
-                        <label for="substitution-${letter}">Ruta ${letter}</label>
-                        <select id="substitution-${letter}" onchange="GeocercasView.renderRouteSubstitution()" style="display: block; width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #0f172a;">${options}</select>
-                    </div>`).join('')}
-                </div>
-                <div id="substitution-result" role="status" aria-live="polite">Selecciona dos rutas diferentes.</div>
-                <button type="button" class="btn btn-secondary" onclick="ModalService.close()" style="margin-top: 20px;">Cerrar</button>
-            </section>
-        `);
-        document.getElementById('substitution-A')?.focus();
-    },
-
-    renderRouteSubstitution() {
-        const result = document.getElementById('substitution-result');
-        if (!result) return;
-        const a = document.getElementById('substitution-A').value;
-        const b = document.getElementById('substitution-B').value;
-        if (a === '' || b === '' || a === b) {
-            result.textContent = 'Selecciona dos rutas diferentes.';
-            return;
-        }
-        const first = this.substitutionRoutes[Number(a)];
-        const second = this.substitutionRoutes[Number(b)];
-        const { firstOnly, secondOnly, shared } = this.compareRouteColonias(first, second);
-        const safe = value => this.escapeHtml(value);
-        const incomplete = first.incomplete || second.incomplete;
-        const section = (title, names) => `<section style="margin-top: 16px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h3 style="font-size: 14px;">${safe(title)} (${names.length})</h3>
-            ${names.length ? `<ul style="padding-left: 20px; margin-top: 8px; font-size: 13px;">${names.sort((x, y) => x.localeCompare(y, 'es')).map(name => `<li>${safe(name)}</li>`).join('')}</ul>` : `<p style="font-size: 13px; margin-top: 8px;">${incomplete ? 'Sin coincidencias en los datos disponibles.' : 'Ninguna.'}</p>`}
-        </section>`;
-        result.innerHTML = `${incomplete ? '<p style="color: #92400e;">Comparación incompleta: hay registros sin colonias descritas. Verifica la información antes de usar esta referencia.</p>' : ''}
-            <p style="font-size: 13px;">${safe(first.name)}: ${first.colonias.size} colonias registradas · ${safe(second.name)}: ${second.colonias.size} colonias registradas.</p>
-            ${section(`${first.name} adquiriría de ${second.name}`, secondOnly)}
-            ${section(`${second.name} adquiriría de ${first.name}`, firstOnly)}
-            ${section('Colonias compartidas', shared)}
-            <p style="font-size: 12px; margin-top: 12px;">Los nombres se comparan sin distinguir mayúsculas ni acentos. Las variantes de escritura o colonias homónimas requieren revisión.</p>`;
     },
 
     normalizeText(value) {
